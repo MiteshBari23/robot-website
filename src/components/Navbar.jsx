@@ -8,9 +8,7 @@ import { useState, useEffect } from "react";
 import { auth, provider } from "../firebase";
 import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 
-export default function OffcanvasExample() {
-  const [user, setUser] = useState(null);
-  
+export default function OffcanvasExample({ user, setUser }) {
 
   const login = async () => {
     try {

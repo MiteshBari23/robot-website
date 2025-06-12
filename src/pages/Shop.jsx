@@ -3,6 +3,8 @@ import Modal from "react-bootstrap/Modal";
 import Button from "react-bootstrap/Button";
 import { addToCart } from "../utils/cart";
 
+
+
 const products = [
   {
     name: "Smart Robot A1",
@@ -60,7 +62,7 @@ const products = [
   },
 ];
 
-export default function Shop() {
+export default function Shop({user}) {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [clickedIndex, setClickedIndex] = useState(null);
 
@@ -73,6 +75,10 @@ export default function Shop() {
   };
 
   const handleAdd = (product, index) => {
+    if (!user) {
+    alert('Please sign in to add items to the cart.');
+    return;
+  }
     addToCart(product);
     setClickedIndex(index);
     alert(`${product.name} added to cart!`);
@@ -156,12 +162,16 @@ export default function Shop() {
                       <Button
                         variant="outline-info"
                         className="me-2"
-                        onClick={() =>
-                          handleAdd(
-                            selectedProduct,
-                            products.indexOf(selectedProduct)
-                          )
-                        }
+                        onClick={() => {
+                            if (!user) {
+                                alert("Please sign in to add products to the cart.");
+                                return;
+                            }
+                            handleAdd(
+                                selectedProduct,
+                                products.indexOf(selectedProduct)
+                            );
+                        }}
                         disabled={
                           clickedIndex === products.indexOf(selectedProduct)
                         }
