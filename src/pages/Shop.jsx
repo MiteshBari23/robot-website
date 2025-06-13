@@ -1,68 +1,50 @@
 import { useState } from "react";
 import Modal from "react-bootstrap/Modal";
 import Button from "react-bootstrap/Button";
-import { addToCart } from "../utils/cart";
-
-
+import { useCart } from "../pages/CartContext"; // adjust path if needed
+import './Shop.css';
 
 const products = [
   {
     name: "Smart Robot A1",
     price: "₹2999",
     img: "emo.jpg",
-    desc: `Lorem, ipsum dolor sit amet consectetur adipisicing elit. Voluptatem aliquid dignissimos soluta quis beatae deleniti possimus laborum ducimus quisquam cupiditate, veniam fugit dolor ipsam at, perferendis dolore. Suscipit, eos iure!
-    Impedit molestiae omnis nostrum consequuntur. Consectetur, iusto ipsam culpa officiis minus, molestiae doloremque minima, doloribus nisi labore quis similique? Explicabo illum expedita facilis placeat. Laborum eligendi dolorum laudantium aut molestias?
-    Nam fugiat laudantium facilis harum vitae! Itaque ipsum consequatur labore ipsa repellendus voluptatibus a accusantium architecto animi, perferendis perspiciatis doloribus corporis, tenetur illum quas adipisci commodi, at dolores provident. Veniam!
-    Pariatur fugiat illo tenetur officiis, ea soluta aperiam sint nam iste suscipit expedita eum reiciendis quis voluptate, possimus eveniet quas consequatur tempore harum ducimus sunt! Harum voluptatibus necessitatibus deserunt recusandae!`,
+    desc: `Lorem ipsum dolor sit amet consectetur...`,
   },
   {
     name: "Crawler Bot X",
     price: "₹4999",
     img: "anki.jpg",
-    desc: `Lorem, ipsum dolor sit amet consectetur adipisicing elit. Voluptatem aliquid dignissimos soluta quis beatae deleniti possimus laborum ducimus quisquam cupiditate, veniam fugit dolor ipsam at, perferendis dolore. Suscipit, eos iure!
-    Impedit molestiae omnis nostrum consequuntur. Consectetur, iusto ipsam culpa officiis minus, molestiae doloremque minima, doloribus nisi labore quis similique? Explicabo illum expedita facilis placeat. Laborum eligendi dolorum laudantium aut molestias?
-    Nam fugiat laudantium facilis harum vitae! Itaque ipsum consequatur labore ipsa repellendus voluptatibus a accusantium architecto animi, perferendis perspiciatis doloribus corporis, tenetur illum quas adipisci commodi, at dolores provident. Veniam!
-    Pariatur fugiat illo tenetur officiis, ea soluta aperiam sint nam iste suscipit expedita eum reiciendis quis voluptate, possimus eveniet quas consequatur tempore harum ducimus sunt! Harum voluptatibus necessitatibus deserunt recusandae!`,
+    desc: `Lorem ipsum dolor sit amet consectetur...`,
   },
   {
     name: "Drone Z",
     price: "₹6999",
     img: "aurdino.jpg",
-    desc: `Lorem, ipsum dolor sit amet consectetur adipisicing elit. Voluptatem aliquid dignissimos soluta quis beatae deleniti possimus laborum ducimus quisquam cupiditate, veniam fugit dolor ipsam at, perferendis dolore. Suscipit, eos iure!
-    Impedit molestiae omnis nostrum consequuntur. Consectetur, iusto ipsam culpa officiis minus, molestiae doloremque minima, doloribus nisi labore quis similique? Explicabo illum expedita facilis placeat. Laborum eligendi dolorum laudantium aut molestias?
-    Nam fugiat laudantium facilis harum vitae! Itaque ipsum consequatur labore ipsa repellendus voluptatibus a accusantium architecto animi, perferendis perspiciatis doloribus corporis, tenetur illum quas adipisci commodi, at dolores provident. Veniam!
-    Pariatur fugiat illo tenetur officiis, ea soluta aperiam sint nam iste suscipit expedita eum reiciendis quis voluptate, possimus eveniet quas consequatur tempore harum ducimus sunt! Harum voluptatibus necessitatibus deserunt recusandae!`,
+    desc: `Lorem ipsum dolor sit amet consectetur...`,
   },
   {
     name: "Cleaner Bot",
     price: "₹2999",
     img: "cleaner.jpg",
-    desc: `Lorem, ipsum dolor sit amet consectetur adipisicing elit. Voluptatem aliquid dignissimos soluta quis beatae deleniti possimus laborum ducimus quisquam cupiditate, veniam fugit dolor ipsam at, perferendis dolore. Suscipit, eos iure!
-    Impedit molestiae omnis nostrum consequuntur. Consectetur, iusto ipsam culpa officiis minus, molestiae doloremque minima, doloribus nisi labore quis similique? Explicabo illum expedita facilis placeat. Laborum eligendi dolorum laudantium aut molestias?
-    Nam fugiat laudantium facilis harum vitae! Itaque ipsum consequatur labore ipsa repellendus voluptatibus a accusantium architecto animi, perferendis perspiciatis doloribus corporis, tenetur illum quas adipisci commodi, at dolores provident. Veniam!
-    Pariatur fugiat illo tenetur officiis, ea soluta aperiam sint nam iste suscipit expedita eum reiciendis quis voluptate, possimus eveniet quas consequatur tempore harum ducimus sunt! Harum voluptatibus necessitatibus deserunt recusandae!`,
+    desc: `Lorem ipsum dolor sit amet consectetur...`,
   },
   {
     name: "Friend Bot",
     price: "₹4999",
     img: "friends.jpg",
-    desc: `Lorem, ipsum dolor sit amet consectetur adipisicing elit. Voluptatem aliquid dignissimos soluta quis beatae deleniti possimus laborum ducimus quisquam cupiditate, veniam fugit dolor ipsam at, perferendis dolore. Suscipit, eos iure!
-    Impedit molestiae omnis nostrum consequuntur. Consectetur, iusto ipsam culpa officiis minus, molestiae doloremque minima, doloribus nisi labore quis similique? Explicabo illum expedita facilis placeat. Laborum eligendi dolorum laudantium aut molestias?
-    Nam fugiat laudantium facilis harum vitae! Itaque ipsum consequatur labore ipsa repellendus voluptatibus a accusantium architecto animi, perferendis perspiciatis doloribus corporis, tenetur illum quas adipisci commodi, at dolores provident. Veniam!
-    Pariatur fugiat illo tenetur officiis, ea soluta aperiam sint nam iste suscipit expedita eum reiciendis quis voluptate, possimus eveniet quas consequatur tempore harum ducimus sunt! Harum voluptatibus necessitatibus deserunt recusandae!`,
+    desc: `Lorem ipsum dolor sit amet consectetur...`,
   },
   {
     name: "Robotic Arm Z1",
-    price: "$699",
+    price: "₹6999",
     img: "robotic arm.jpg",
-    desc: `Lorem, ipsum dolor sit amet consectetur adipisicing elit. Voluptatem aliquid dignissimos soluta quis beatae deleniti possimus laborum ducimus quisquam cupiditate, veniam fugit dolor ipsam at, perferendis dolore. Suscipit, eos iure!
-    Impedit molestiae omnis nostrum consequuntur. Consectetur, iusto ipsam culpa officiis minus, molestiae doloremque minima, doloribus nisi labore quis similique? Explicabo illum expedita facilis placeat. Laborum eligendi dolorum laudantium aut molestias?
-    Nam fugiat laudantium facilis harum vitae! Itaque ipsum consequatur labore ipsa repellendus voluptatibus a accusantium architecto animi, perferendis perspiciatis doloribus corporis, tenetur illum quas adipisci commodi, at dolores provident. Veniam!
-    Pariatur fugiat illo tenetur officiis, ea soluta aperiam sint nam iste suscipit expedita eum reiciendis quis voluptate, possimus eveniet quas consequatur tempore harum ducimus sunt! Harum voluptatibus necessitatibus deserunt recusandae!`,
+    desc: `Lorem ipsum dolor sit amet consectetur...`,
   },
 ];
 
-export default function Shop({user}) {
+export default function Shop({ user }) {
+  const { addToCart } = useCart();
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [clickedIndex, setClickedIndex] = useState(null);
 
@@ -75,10 +57,7 @@ export default function Shop({user}) {
   };
 
   const handleAdd = (product, index) => {
-    if (!user) {
-    alert('Please sign in to add items to the cart.');
-    return;
-  }
+    if (!user) return alert("Please sign in to add items");
     addToCart(product);
     setClickedIndex(index);
     alert(`${product.name} added to cart!`);
@@ -136,6 +115,7 @@ export default function Shop({user}) {
           ))}
         </div>
 
+        {/* Modal */}
         <Modal show={!!selectedProduct} onHide={handleClose} centered size="lg">
           {selectedProduct && (
             <>
@@ -162,16 +142,12 @@ export default function Shop({user}) {
                       <Button
                         variant="outline-info"
                         className="me-2"
-                        onClick={() => {
-                            if (!user) {
-                                alert("Please sign in to add products to the cart.");
-                                return;
-                            }
-                            handleAdd(
-                                selectedProduct,
-                                products.indexOf(selectedProduct)
-                            );
-                        }}
+                        onClick={() =>
+                          handleAdd(
+                            selectedProduct,
+                            products.indexOf(selectedProduct)
+                          )
+                        }
                         disabled={
                           clickedIndex === products.indexOf(selectedProduct)
                         }

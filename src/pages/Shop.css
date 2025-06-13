@@ -1,0 +1,7 @@
+.container {
+  padding-top: 50px; /* prevents hiding behind fixed navbar */
+  padding-bottom: 50px;
+  background-color: #0f172a;
+  color: #f8fafc;
+  min-height: 100vh;
+}

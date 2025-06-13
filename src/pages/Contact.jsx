@@ -1,48 +1,53 @@
-import { Container, Form, Button, Row, Col } from "react-bootstrap";
+import React from 'react';
+import './Contact.css'; // Create this file if you don't have it
 
-export default function Contact() {
+const Contact = () => {
   return (
-    <section id="contact" className="py-5" style={{ backgroundColor: "#0f172a", color: "#f8fafc" }}>
-      <Container>
-        <h2 className="text-center mb-5">Contact Us</h2>
-        <Row>
-          <Col md={6} className="mb-4">
-            <h4>Get in Touch</h4>
-            <p>
-              Have a question about one of our robots? Want to know more before purchasing?
-              Drop us a message and we’ll get back to you within 24 hours!
-            </p>
-            <ul style={{ listStyle: "none", padding: 0 }}>
-              <li><strong>📧 Email:</strong> support@robostore.com</li>
-              <li><strong>📞 Phone:</strong> +91 98765 43210</li>
-              <li><strong>📍 Address:</strong> Mumbai, Maharashtra, India</li>
-            </ul>
-          </Col>
+    <div className="contact-page">
+      <div className="contact-container">
+        <h1>Contact Us</h1>
+        <p className="contact-intro">
+          Have a question about one of our robots? Want to know more before purchasing?
+          Drop us an email and we’ll get back to you within 24 hours!
+        </p>
+        <ul className="contact-details">
+          <li><strong>Email:</strong> support@robostore.com</li>
+          <li><strong>Phone:</strong> +91 98765 43210</li>
+          <li><strong>Address:</strong> Mumbai, Maharashtra, India</li>
+        </ul>
 
-          <Col md={6}>
-            <Form>
-              <Form.Group controlId="formName" className="mb-3">
-                <Form.Label>Name</Form.Label>
-                <Form.Control type="text" placeholder="Enter your name" />
-              </Form.Group>
-
-              <Form.Group controlId="formEmail" className="mb-3">
-                <Form.Label>Email</Form.Label>
-                <Form.Control type="email" placeholder="Enter your email" />
-              </Form.Group>
-
-              <Form.Group controlId="formMessage" className="mb-3">
-                <Form.Label>Message</Form.Label>
-                <Form.Control as="textarea" rows={4} placeholder="Your message" />
-              </Form.Group>
-
-              <Button variant="info" type="submit">
-                Send Message
-              </Button>
-            </Form>
-          </Col>
-        </Row>
-      </Container>
-    </section>
+        <section className="bg-gray-700 p-10">
+        <h2 className="text-2xl font-bold text-center mb-6">
+          What Our Users Say
+        </h2>
+        <div className="grid md:grid-cols-2 gap-6">
+          <blockquote className="italic border-l-4 border-yellow-400 pl-4">
+            "RoboHelper has changed my life! It's like having an extra pair of
+            hands."
+            <br />
+            <span className="block mt-2 font-semibold">– Priya, Mumbai</span>
+          </blockquote>
+          <blockquote className="italic border-l-4 border-yellow-400 pl-4">
+            "Their support is phenomenal. My RoboX had a glitch and they fixed
+            it the same day!"
+            <br />
+            <span className="block mt-2 font-semibold">– Aditya, Pune</span>
+          </blockquote>
+          <blockquote className="italic border-l-4 border-yellow-400 pl-4">
+            On time delivery!
+            <br />
+            <span className="block mt-2 font-semibold">– Yamini, Thane</span>
+          </blockquote>
+          <blockquote className="italic border-l-4 border-yellow-400 pl-4">
+            Great products at affordable prices 🔥
+            <br />
+            <span className="block mt-2 font-semibold">– Geet, Nerul</span>
+          </blockquote>
+        </div>
+      </section>
+      </div>
+    </div>
   );
-}
+};
+
+export default Contact;

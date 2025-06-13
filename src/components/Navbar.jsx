@@ -7,6 +7,7 @@ import NavDropdown from "react-bootstrap/NavDropdown";
 import { useState, useEffect } from "react";
 import { auth, provider } from "../firebase";
 import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
+import { Link } from 'react-router-dom';
 
 export default function OffcanvasExample({ user, setUser }) {
 
@@ -45,7 +46,8 @@ export default function OffcanvasExample({ user, setUser }) {
     <Navbar
       expand="md"
       fixed="top"
-      style={{ backgroundColor: "#0f172a" }}
+     style={{ backgroundColor: "#0f172a", marginBottom: "1rem" }}
+
       variant="dark"
       className="shadow-sm py-2"
     >
@@ -54,7 +56,7 @@ export default function OffcanvasExample({ user, setUser }) {
         className="d-flex justify-content-between align-items-center"
       >
         {/* Brand */}
-        <Navbar.Brand href="#" className="fw-bold fs-4">
+        <Navbar.Brand as={Link} to="/" className="fw-bold fs-4">
           RoboStore
         </Navbar.Brand>
 
@@ -77,19 +79,22 @@ export default function OffcanvasExample({ user, setUser }) {
 
         <Navbar.Collapse id="main-navbar-collapse">
           <Nav className="ms-auto d-flex align-items-center gap-3 text-center text-md-start mt-3 mt-md-0">
-            <Nav.Link href="/" className="text-light">
+            <Nav.Link as={Link} to ="/" className="text-light">
               Home
             </Nav.Link>
-            <Nav.Link href="#shop" className="text-light">
+            <Nav.Link as={Link} to="/shop" className="text-light">
               Shop
             </Nav.Link>
+             <Nav.Link as={Link} to="/tools" className="text-light">
+              Tools
+            </Nav.Link>
             <NavDropdown title="More" menuVariant="dark">
-              <NavDropdown.Item href="#contact">Contact</NavDropdown.Item>
+              <NavDropdown.Item as={Link} to="/contact">Contact</NavDropdown.Item>
               <NavDropdown.Divider />
-              <NavDropdown.Item href="#about">About Us</NavDropdown.Item>
+              <NavDropdown.Item as={Link} to="/about">About Us</NavDropdown.Item>
             </NavDropdown>
             {user && (
-              <Nav.Link href="#cart" className="text-light">
+              <Nav.Link as={Link} to="/cart" className="text-light">
                 Cart
               </Nav.Link>
             )}

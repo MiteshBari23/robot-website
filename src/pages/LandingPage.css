@@ -1,5 +1,5 @@
 .landing-page {
-  height: 100vh;
+  min-height: 100vh; /* Instead of height: 100vh */
   width: 100%;
   background-size: cover;
   background-position: center;
@@ -9,7 +9,11 @@
   justify-content: flex-start;
   position: relative;
   color: white;
+  padding-top: 2rem;
+  padding-bottom: 2rem;
 }
+
+
 
 .content-overlay {
   padding: 2rem 3rem;

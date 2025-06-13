@@ -1,24 +1,37 @@
 import Navbar from "./components/Navbar";
-import LandingPage from "./pages/LandingPage";
 import Shop from "./pages/Shop";
-import Contact from "./pages/Contact";
 import About from "./pages/About";
-import Auth from "./components/Auth";
+import Contact from "./pages/Contact";
+import LandingPage from "./pages/LandingPage";
+import Cart from "./pages/Cart";
+import ThankYou from "./pages/ThankYou";
+// import Tools from "./pages/Tool";
+// import CloudBallGame from "./pages/tools/CloudBallGame";
+// import BallController from "./pages/tools/BallController";
 
-import { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { useState } from "react";
+
 function App() {
-const [user, setUser] = useState(null);
+  const [user, setUser] = useState(null);
+
   return (
-    <>
-  
-      <Auth />
-      <Navbar />
-      <LandingPage />
-      <Shop />
-      <About />
-      <Contact />
-    </>
+    <Router>
+      <Navbar setUser={setUser} user={user} />
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/shop" element={<Shop user={user} />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/thankyou" element={<ThankYou />} />
+        {/* <Route path="/tools" element={<Tools />} />
+        <Route path="/tools/cloud-ball" element={<CloudBallGame />} />
+        <Route path="/tools/ball-controller" element={<BallController />} />   */}
+      </Routes>
+    </Router>
   );
 }
 
 export default App;
+

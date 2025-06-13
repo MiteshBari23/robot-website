@@ -1,0 +1,28 @@
+.about-section {
+  padding-top: 100px; /* prevents hiding behind fixed navbar */
+  padding-bottom: 50px;
+  background-color: #0f172a;
+  color: #f8fafc;
+  min-height: 100vh;
+}
+
+.about-section img {
+  max-height: 400px;
+  object-fit: cover;
+}
+.about-section {
+  background-color: #0d1117;
+  color: #ffffff;
+  padding: 100px 20px;
+}
+
+.partner-logo {
+  max-height: 60px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+  transition: transform 0.3s;
+}
+
+.partner-logo:hover {
+  transform: scale(1.05);
+}

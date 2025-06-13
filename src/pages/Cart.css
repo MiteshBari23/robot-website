@@ -1,0 +1,18 @@
+/* Ensure background covers the full width & height */
+html, body {
+  height: 100%;
+  margin: 0;
+  background-color: #0f172a; /* Match your dark navbar */
+  font-family: Arial, sans-serif;
+}
+
+/* Center and expand the cart container */
+.cart-container {
+  padding-top: 100px; /* Push below navbar */
+  padding-left: 20px;
+  padding-right: 20px;
+  margin: 0 auto;
+  max-width: 1000px;
+  width: 100%;
+  color: white;
+}
