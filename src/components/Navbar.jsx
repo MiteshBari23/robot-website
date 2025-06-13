@@ -85,8 +85,8 @@ export default function OffcanvasExample({ user, setUser }) {
             <Nav.Link as={Link} to="/shop" className="text-light">
               Shop
             </Nav.Link>
-             <Nav.Link as={Link} to="/tools" className="text-light">
-              Tools
+             <Nav.Link as={Link} to="/tools/cloud-ball" className="text-light">
+              Ball 
             </Nav.Link>
             <NavDropdown title="More" menuVariant="dark">
               <NavDropdown.Item as={Link} to="/contact">Contact</NavDropdown.Item>

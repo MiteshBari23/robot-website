@@ -1,13 +1,18 @@
 import React, { useEffect, useRef, useState } from "react";
 import io from "socket.io-client";
 
-const socket = io("https://your-backend-url.onrender.com"); // Replace with your actual backend URL
+const socket = io("https://robot-website-1.onrender.com"); // Replace with your actual backend URL
 
-export default function CloudBallGameMobile() {
+export default function CloudBallGame() {
   const [isCameraOn, setIsCameraOn] = useState(false);
   const videoRef = useRef(null);
   const ballRef = useRef(null);
   const streamRef = useRef(null);
+  const peerConnection = useRef(null);
+
+  const config = {
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+  };
 
   // Ball position
   const position = useRef({ x: 150, y: 100 });
@@ -52,6 +57,43 @@ export default function CloudBallGameMobile() {
       }
       setIsCameraOn(status);
     });
+
+    // WebRTC handling
+    socket.on("viewer-ready", async () => {
+      peerConnection.current = new RTCPeerConnection(config);
+
+      peerConnection.current.onicecandidate = (e) => {
+        if (e.candidate) {
+          socket.emit("ice-candidate", e.candidate);
+        }
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      streamRef.current = stream;
+      videoRef.current.srcObject = stream;
+
+      stream.getTracks().forEach((track) =>
+        peerConnection.current.addTrack(track, stream)
+      );
+
+      const offer = await peerConnection.current.createOffer();
+      await peerConnection.current.setLocalDescription(offer);
+      socket.emit("offer", offer);
+    });
+
+    socket.on("answer", async (answer) => {
+      if (peerConnection.current) {
+        await peerConnection.current.setRemoteDescription(answer);
+      }
+    });
+
+    socket.on("ice-candidate", async (candidate) => {
+      try {
+        await peerConnection.current.addIceCandidate(candidate);
+      } catch (err) {
+        console.error("Error adding ICE candidate", err);
+      }
+    });
   }, []);
 
   return (
@@ -72,7 +114,6 @@ export default function CloudBallGameMobile() {
           muted
           width="320"
           height="240"
-          style={{ display: "none" }}
         ></video>
       </div>
     </div>
