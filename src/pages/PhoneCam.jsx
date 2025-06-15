@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 
 // IMPORTANT: Replace with your deployed Node.js server URL if it's different
-const NODE_SERVER_URL = "https://backend-746d.onrender.com";
+const NODE_SERVER_URL = "https://website-and-cloudgame-2.onrender.com";
 const PHONE_DEVICE_ID = `phone-${Math.random().toString(36).substring(7)}`;
 
 const PhoneCam = () => {
