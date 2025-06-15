@@ -5,17 +5,17 @@ const socket = io("https://website-and-cloudgame-2.onrender.com");
 
 export default function MobileView() {
   const videoRef = useRef(null);
+  const canvasRef = useRef(null);
   const ballRef = useRef(null);
   const intervalRef = useRef(null);
   const streamRef = useRef(null);
-  const [cameraActive, setCameraActive] = useState(false);
 
   useEffect(() => {
     let x = window.innerWidth / 2;
     let y = window.innerHeight / 2;
-    const step = 20;
 
     socket.on("move", ({ direction }) => {
+      const step = 20;
       if (direction === "ArrowUp") y -= step;
       if (direction === "ArrowDown") y += step;
       if (direction === "ArrowLeft") x -= step;
@@ -25,79 +25,49 @@ export default function MobileView() {
       ball.style.top = `${y}px`;
     });
 
-    socket.on("start-camera", () => {
-      setCameraActive(true);
-      startCamera();
-    });
-
-    socket.on("stop-camera", () => {
-      setCameraActive(false);
-      stopCamera();
-    });
+    socket.on("start-camera", startCamera);
+    socket.on("stop-camera", stopCamera);
   }, []);
 
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       streamRef.current = stream;
-      const video = videoRef.current;
-      video.srcObject = stream;
-      video.play();
-      video.style.display = "block";
+      videoRef.current.srcObject = stream;
+      videoRef.current.play();
+      videoRef.current.style.display = "block";
 
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-
+      const ctx = canvasRef.current.getContext("2d");
       intervalRef.current = setInterval(() => {
-        if (!video.videoWidth) return;
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0);
-        const frame = canvas.toDataURL("image/jpeg", 0.5);
+        canvasRef.current.width = videoRef.current.videoWidth;
+        canvasRef.current.height = videoRef.current.videoHeight;
+        ctx.drawImage(videoRef.current, 0, 0);
+        const frame = canvasRef.current.toDataURL("image/jpeg", 0.5);
         socket.emit("camera-frame", frame);
-      }, 100);
+      }, 200);
     } catch (err) {
-      console.error("Camera error:", err);
-      alert("Camera access denied.");
+      alert("Camera access denied");
     }
   };
 
   const stopCamera = () => {
     clearInterval(intervalRef.current);
-    const video = videoRef.current;
-    video.pause();
-    video.srcObject = null;
-    video.style.display = "none";
-
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-    }
+    videoRef.current.pause();
+    videoRef.current.srcObject = null;
+    videoRef.current.style.display = "none";
+    streamRef.current?.getTracks().forEach(track => track.stop());
   };
 
   return (
-    <div style={{ background: "#222", height: "100vh", margin: 0 }}>
+    <div className="relative w-full h-screen bg-black">
+      <h2 className="text-white text-center text-xl py-4">📱 Mobile View</h2>
+      <video ref={videoRef} autoPlay muted playsInline className="hidden" />
+      <canvas ref={canvasRef} className="hidden" />
       <div
         ref={ballRef}
-        id="ball"
-        style={{
-          width: "50px",
-          height: "50px",
-          background: "red",
-          borderRadius: "50%",
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)"
-        }}
+        className="absolute w-12 h-12 bg-red-600 rounded-full"
+        style={{ top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}
       ></div>
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted
-        id="camera"
-        style={{ display: "none", position: "fixed", bottom: 0, width: "100%" }}
-      />
     </div>
   );
 }
