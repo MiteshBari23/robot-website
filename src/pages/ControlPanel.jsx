@@ -1,59 +1,49 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import io from 'socket.io-client';
 
 const socket = io("https://website-and-cloudgame-2.onrender.com");
 
 export default function ControlPanel() {
   const [imageSrc, setImageSrc] = useState('');
-  const ballRef = useRef(null);
-  const containerRef = useRef(null);
-  const pos = useRef({ x: 100, y: 100 });
+  const [cameraOn, setCameraOn] = useState(false);
 
   useEffect(() => {
     socket.on('camera-frame', (data) => {
       setImageSrc(data);
     });
-
-    socket.on('orientation', ({ beta, gamma }) => {
-      if (!ballRef.current || !containerRef.current) return;
-
-      const maxX = containerRef.current.offsetWidth - 50;
-      const maxY = containerRef.current.offsetHeight - 50;
-
-      pos.current.x += gamma / 2;
-      pos.current.y += beta / 2;
-
-      pos.current.x = Math.max(0, Math.min(maxX, pos.current.x));
-      pos.current.y = Math.max(0, Math.min(maxY, pos.current.y));
-
-      ballRef.current.style.left = `${pos.current.x}px`;
-      ballRef.current.style.top = `${pos.current.y}px`;
-    });
   }, []);
 
+  const toggleCamera = () => {
+    const newState = cameraOn ? 'off' : 'on';
+    socket.emit('toggle-camera', newState);
+    setCameraOn(!cameraOn);
+  };
+
+  const move = (direction) => {
+    socket.emit('move', direction);
+  };
+
   return (
-    <div className="bg-black text-white min-h-screen flex flex-col items-center justify-center p-4">
-      <h1 className="text-3xl font-bold mb-6">💻 Control Panel + Live Feed</h1>
+    <div className="bg-black text-white h-screen flex flex-col items-center justify-center p-4">
+      <h1 className="text-3xl font-bold mb-4">💻 Control Panel</h1>
 
-      <div className="flex flex-col md:flex-row gap-6 w-full max-w-5xl items-center">
-        <div className="bg-white rounded-lg p-2">
-          {imageSrc ? (
-            <img src={imageSrc} alt="Live Feed" className="rounded-md w-80 h-auto" />
-          ) : (
-            <p className="text-center text-gray-700 p-4">Waiting for camera feed...</p>
-          )}
-        </div>
+      {imageSrc ? (
+        <img src={imageSrc} alt="Live Feed" className="rounded-lg shadow-lg w-full max-w-lg mb-4" />
+      ) : (
+        <p>Waiting for camera feed...</p>
+      )}
 
-        <div
-          ref={containerRef}
-          className="relative w-80 h-80 border-2 border-white rounded overflow-hidden bg-gray-800"
-        >
-          <div
-            ref={ballRef}
-            className="absolute w-12 h-12 bg-blue-500 rounded-full shadow-lg"
-            style={{ top: '100px', left: '100px' }}
-          ></div>
-        </div>
+      <div className="flex gap-4 mb-4">
+        <button onClick={toggleCamera} className={`px-4 py-2 rounded ${cameraOn ? 'bg-red-600' : 'bg-green-600'}`}>
+          {cameraOn ? '🛑 Stop Camera' : '🎬 Start Camera'}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <button onClick={() => move('up')} className="col-start-2 px-4 py-2 bg-blue-500 rounded">⬆️</button>
+        <button onClick={() => move('left')} className="col-start-1 px-4 py-2 bg-blue-500 rounded">⬅️</button>
+        <button onClick={() => move('down')} className="col-start-2 px-4 py-2 bg-blue-500 rounded">⬇️</button>
+        <button onClick={() => move('right')} className="col-start-3 px-4 py-2 bg-blue-500 rounded">➡️</button>
       </div>
     </div>
   );
