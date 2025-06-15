@@ -7,52 +7,72 @@ export default function ControlPanel() {
   const [imageSrc, setImageSrc] = useState("");
   const [cameraOn, setCameraOn] = useState(false);
 
-  useEffect(() => {
-    socket.on("camera-frame", (data) => {
-      console.log("🖥️ Got frame on control panel");
-      setImageSrc(data); // ✅ Frame received here
-    });
-  }, []);
+  const sendMove = (direction) => {
+    socket.emit("move", { direction });
+  };
 
   const toggleCamera = () => {
-    const next = !cameraOn;
-    socket.emit("toggle-camera", next);
-    setCameraOn(next);
+    if (cameraOn) {
+      socket.emit("stop-camera");
+    } else {
+      socket.emit("start-camera");
+    }
+    setCameraOn(!cameraOn);
   };
 
-  const sendMove = (dir) => {
-    socket.emit("move-ball", dir);
-  };
+  useEffect(() => {
+    socket.on("camera-frame", (data) => {
+      setImageSrc(data);
+    });
+
+    const handleKey = (e) => {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+        socket.emit("move", { direction: e.key });
+      }
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, []);
 
   return (
-    <div className="bg-black text-white min-h-screen flex flex-col items-center justify-center space-y-4 p-6">
-      <h1 className="text-3xl font-bold">💻 Control Panel</h1>
+    <div
+      style={{
+        fontFamily: "Arial, sans-serif",
+        background: "#f4f4f4",
+        height: "100vh",
+        padding: "20px",
+        textAlign: "center"
+      }}
+    >
+      <h2>Control Ball with Arrow Keys or Buttons</h2>
 
-      {imageSrc ? (
-        <img
-          src={imageSrc}
-          alt="Live Feed"
-          className="rounded-lg border w-full max-w-md shadow-lg"
-        />
-      ) : (
-        <p className="text-gray-400">Waiting for camera feed...</p>
-      )}
-
-      <button
-        onClick={toggleCamera}
-        className={`px-6 py-2 rounded font-semibold ${
-          cameraOn ? "bg-red-600" : "bg-green-600"
-        }`}
+      <div
+        className="controls"
+        style={{
+          display: "grid",
+          gridTemplateAreas: `". up ." "left . right" ". down ."`,
+          gap: "10px",
+          justifyContent: "center"
+        }}
       >
-        {cameraOn ? "🛑 Stop Camera" : "🎥 Start Camera"}
+        <button onClick={() => sendMove("ArrowUp")} style={{ gridArea: "up" }}>↑</button>
+        <button onClick={() => sendMove("ArrowLeft")} style={{ gridArea: "left" }}>←</button>
+        <button onClick={() => sendMove("ArrowRight")} style={{ gridArea: "right" }}>→</button>
+        <button onClick={() => sendMove("ArrowDown")} style={{ gridArea: "down" }}>↓</button>
+      </div>
+
+      <br />
+      <button onClick={toggleCamera} style={{ padding: "10px 20px", fontSize: "16px" }}>
+        {cameraOn ? "🛑 Stop Camera" : "🎬 Start Camera"}
       </button>
 
-      <div className="grid grid-cols-3 gap-2 mt-4">
-        <button onClick={() => sendMove("up")} className="col-start-2 bg-blue-600 px-4 py-2 rounded">⬆️</button>
-        <button onClick={() => sendMove("left")} className="bg-blue-600 px-4 py-2 rounded">⬅️</button>
-        <button onClick={() => sendMove("down")} className="col-start-2 bg-blue-600 px-4 py-2 rounded">⬇️</button>
-        <button onClick={() => sendMove("right")} className="bg-blue-600 px-4 py-2 rounded">➡️</button>
-      </div>
+      <br />
+      <img
+        id="liveFeed"
+        src={imageSrc}
+        alt="Camera Feed"
+        style={{ maxWidth: "400px", marginTop: "20px" }}
+      />
     </div>
   );
 }

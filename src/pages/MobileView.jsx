@@ -1,160 +1,103 @@
-import React from 'react';
-import { useEffect, useRef, useState } from 'react';
-import io from 'socket.io-client';
-import './MobileView.css';
+import React, { useEffect, useRef, useState } from "react";
+import io from "socket.io-client";
 
-const SOCKET_URL = import.meta.env.PROD 
-  ? 'https://website-and-cloudgame-2.onrender.com'
-  : 'http://localhost:10000';
+const socket = io("https://website-and-cloudgame-2.onrender.com");
 
 export default function MobileView() {
-  const [isConnected, setIsConnected] = useState(false);
-  const [isCameraActive, setIsCameraActive] = useState(false);
   const videoRef = useRef(null);
-  const socketRef = useRef(null);
+  const ballRef = useRef(null);
+  const intervalRef = useRef(null);
   const streamRef = useRef(null);
-  const [accelerometer, setAccelerometer] = useState({ x: 0, y: 0, z: 0 });
+  const [cameraActive, setCameraActive] = useState(false);
 
   useEffect(() => {
-    // Initialize socket connection
-    socketRef.current = io(SOCKET_URL);
+    let x = window.innerWidth / 2;
+    let y = window.innerHeight / 2;
+    const step = 20;
 
-    socketRef.current.on('connect', () => {
-      setIsConnected(true);
-      console.log('Connected to server');
+    socket.on("move", ({ direction }) => {
+      if (direction === "ArrowUp") y -= step;
+      if (direction === "ArrowDown") y += step;
+      if (direction === "ArrowLeft") x -= step;
+      if (direction === "ArrowRight") x += step;
+      const ball = ballRef.current;
+      ball.style.left = `${x}px`;
+      ball.style.top = `${y}px`;
     });
 
-    socketRef.current.on('disconnect', () => {
-      setIsConnected(false);
-      console.log('Disconnected from server');
+    socket.on("start-camera", () => {
+      setCameraActive(true);
+      startCamera();
     });
 
-    // Handle camera control requests from laptop
-    socketRef.current.on('toggleCamera', handleCameraToggle);
-
-    // Request accelerometer permission and start listening
-    if (typeof DeviceMotionEvent.requestPermission === 'function') {
-      DeviceMotionEvent.requestPermission()
-        .then(response => {
-          if (response === 'granted') {
-            window.addEventListener('devicemotion', handleMotion);
-          }
-        })
-        .catch(console.error);
-    } else {
-      window.addEventListener('devicemotion', handleMotion);
-    }
-
-    return () => {
-      window.removeEventListener('devicemotion', handleMotion);
+    socket.on("stop-camera", () => {
+      setCameraActive(false);
       stopCamera();
-      socketRef.current?.disconnect();
-    };
+    });
   }, []);
-
-  const handleMotion = (event) => {
-    const x = event.accelerationIncludingGravity.x;
-    const y = event.accelerationIncludingGravity.y;
-    const z = event.accelerationIncludingGravity.z;
-
-    setAccelerometer({ x, y, z });
-    socketRef.current?.emit('ballMovement', { x, y, z });
-  };
-
-  const handleCameraToggle = async (enabled) => {
-    if (enabled) {
-      await startCamera();
-    } else {
-      stopCamera();
-    }
-    setIsCameraActive(enabled);
-  };
 
   const startCamera = async () => {
     try {
-      streamRef.current = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }
-      });
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = streamRef.current;
-        startStreaming();
-      }
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      streamRef.current = stream;
+      const video = videoRef.current;
+      video.srcObject = stream;
+      video.play();
+      video.style.display = "block";
+
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      intervalRef.current = setInterval(() => {
+        if (!video.videoWidth) return;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0);
+        const frame = canvas.toDataURL("image/jpeg", 0.5);
+        socket.emit("camera-frame", frame);
+      }, 100);
     } catch (err) {
-      console.error('Camera access error:', err);
-      socketRef.current?.emit('cameraError', { message: err.message });
+      console.error("Camera error:", err);
+      alert("Camera access denied.");
     }
   };
 
   const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-    setIsCameraActive(false);
-  };
-
-  const startStreaming = () => {
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
+    clearInterval(intervalRef.current);
     const video = videoRef.current;
+    video.pause();
+    video.srcObject = null;
+    video.style.display = "none";
 
-    const sendFrame = () => {
-      if (streamRef.current && video?.readyState === video.HAVE_ENOUGH_DATA) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0);
-        
-        // Compress and send image data
-        canvas.toBlob((blob) => {
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            socketRef.current?.emit('cameraStream', reader.result);
-          };
-          reader.readAsDataURL(blob);
-        }, 'image/jpeg', 0.5);
-      }
-      if (isCameraActive) {
-        requestAnimationFrame(sendFrame);
-      }
-    };
-
-    sendFrame();
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+    }
   };
 
   return (
-    <div className="mobile-view">
-      <div className="status-bar">
-        {isConnected ? 
-          <span className="connected">Connected to Server</span> : 
-          <span className="disconnected">Disconnected</span>
-        }
-      </div>
-
-      <div className="sensor-data">
-        <p>Accelerometer:</p>
-        <p>X: {accelerometer.x?.toFixed(2)}</p>
-        <p>Y: {accelerometer.y?.toFixed(2)}</p>
-        <p>Z: {accelerometer.z?.toFixed(2)}</p>
-      </div>
-
-      <video 
+    <div style={{ background: "#222", height: "100vh", margin: 0 }}>
+      <div
+        ref={ballRef}
+        id="ball"
+        style={{
+          width: "50px",
+          height: "50px",
+          background: "red",
+          borderRadius: "50%",
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)"
+        }}
+      ></div>
+      <video
         ref={videoRef}
-        autoPlay 
-        playsInline 
-        style={{ display: 'none' }}
+        autoPlay
+        playsInline
+        muted
+        id="camera"
+        style={{ display: "none", position: "fixed", bottom: 0, width: "100%" }}
       />
-
-      <div className="camera-status">
-        Camera is {isCameraActive ? 'Active' : 'Inactive'}
-      </div>
-
-      <div className="instructions">
-        Tilt your device to control the ball
-      </div>
     </div>
   );
 }
