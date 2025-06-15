@@ -20,7 +20,7 @@ export default function ControlPanel() {
   };
 
   const move = (direction) => {
-    socket.emit('move', direction);
+    socket.emit('move-ball', direction);
   };
 
   return (
