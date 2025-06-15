@@ -1,58 +1,25 @@
-import React, { useEffect, useState } from "react";
-import io from "socket.io-client";
+import { useEffect, useState } from 'react';
+import io from 'socket.io-client';
 
+const socket = io("https://website-and-cloudgame-2.onrender.com");
 
-const backendURL =
-  import.meta.env.PROD
-    ? "https://website-and-cloudgame-2.onrender.com/" // ✅ use this after deployment
-    : "http://localhost:5000"; // ✅ use this for local development
-
-const socket = io(backendURL);
-
-
-const ControlPanel = () => {
-  const [imageSrc, setImageSrc] = useState(null);
-  const [cameraOn, setCameraOn] = useState(false);
+export default function ControlPanel() {
+  const [imageSrc, setImageSrc] = useState('');
 
   useEffect(() => {
-    socket.on("camera-frame", (frame) => {
-      console.log("📸 Received frame");
-      setImageSrc(frame);
+    socket.on('camera-frame', (data) => {
+      setImageSrc(data);
     });
-
-    return () => {
-      socket.off("camera-frame");
-    };
   }, []);
 
-  const toggleCamera = () => {
-    socket.emit("toggle-camera", !cameraOn);
-    setCameraOn(!cameraOn);
-  };
-
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Control Panel</h2>
-      <button onClick={toggleCamera}>
-        {cameraOn ? "Turn Off Camera" : "Turn On Camera"}
-      </button>
-
-      <div style={{ marginTop: "20px" }}>
-        {imageSrc ? (
-          <img src={imageSrc} alt="Mobile Feed" width="300" />
-        ) : (
-          <p>No camera feed yet</p>
-        )}
-      </div>
-
-      <div style={{ marginTop: "20px" }}>
-        <button onClick={() => socket.emit("move-ball", "up")}>⬆️</button>
-        <button onClick={() => socket.emit("move-ball", "left")}>⬅️</button>
-        <button onClick={() => socket.emit("move-ball", "right")}>➡️</button>
-        <button onClick={() => socket.emit("move-ball", "down")}>⬇️</button>
-      </div>
+    <div className="bg-black text-white h-screen flex flex-col items-center justify-center p-4">
+      <h1 className="text-3xl font-bold mb-4">💻 Control Panel</h1>
+      {imageSrc ? (
+        <img src={imageSrc} alt="Live Feed" className="rounded-lg shadow-lg w-full max-w-lg" />
+      ) : (
+        <p>Waiting for camera feed...</p>
+      )}
     </div>
   );
-};
-
-export default ControlPanel;
+}
