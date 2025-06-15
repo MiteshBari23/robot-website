@@ -4,7 +4,7 @@ import io from "socket.io-client";
 
 const backendURL =
   import.meta.env.PROD
-    ? "https://website-and-cloudgame.onrender.com" // ✅ use this after deployment
+    ? "https://website-and-cloudgame-2.onrender.com/" // ✅ use this after deployment
     : "http://localhost:5000"; // ✅ use this for local development
 
 const socket = io(backendURL);
