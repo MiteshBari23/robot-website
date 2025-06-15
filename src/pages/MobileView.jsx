@@ -42,6 +42,9 @@ const MobileView = () => {
     if (dir === "right") ball.style.left = `${left + 10}px`;
   };
 
+  socket.emit("camera-frame", frame);
+console.log("📸 Frame sent to server");
+
   const startCamera = async () => {
     try {
       console.log("🎥 Attempting to access camera...");
@@ -54,7 +57,7 @@ const MobileView = () => {
       videoRef.current.onloadedmetadata = () => {
         videoRef.current.play();
         const sendFrames = () => {
-          if (!cameraActive) return;
+         if (!cameraActive) return setTimeout(sendFrame, 200)
           canvas.width = videoRef.current.videoWidth;
           canvas.height = videoRef.current.videoHeight;
           ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
