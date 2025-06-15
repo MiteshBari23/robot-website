@@ -19,6 +19,14 @@ export default function ControlPanel() {
     setCameraOn(!cameraOn);
   };
 
+  useEffect(() => {
+  socket.on("camera-frame", (data) => {
+    console.log("📷 Received frame");
+    setImageSrc(data);
+  });
+}, []);
+
+
   const move = (dir) => {
     socket.emit("move-ball", dir);
   };

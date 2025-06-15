@@ -1,32 +1,40 @@
-import { useEffect, useRef, useState } from "react";
+
+import React, { useEffect, useRef, useState } from "react";
 import io from "socket.io-client";
 
-const socket = io("https://website-and-cloudgame-2.onrender.com");
+const backendURL =
+  import.meta.env.PROD
+    ? "https://website-and-cloudgame-2.onrender.com/"
+    : "http://localhost:5000";
 
-export default function MobileView() {
+const socket = io(backendURL);
+
+const MobileView = () => {
   const ballRef = useRef(null);
   const videoRef = useRef(null);
-  const [cameraOn, setCameraOn] = useState(false);
-  let stream;
+  const [cameraActive, setCameraActive] = useState(false);
 
   useEffect(() => {
-    socket.on("move-ball", (dir) => moveBall(dir));
+    console.log("📱 MobileView mounted");
 
-    socket.on("toggle-camera", (state) => {
-      if (state === "on") {
-        setCameraOn(true);
+    socket.on("move-ball", (dir) => {
+      console.log("📦 Received move-ball:", dir);
+      moveBall(dir);
+    });
+
+    socket.on("toggle-camera", (status) => {
+      console.log("🎥 toggle-camera received on mobile:", status);
+      setCameraActive(status);
+      if (status) {
         startCamera();
-      } else {
-        setCameraOn(false);
-        stopCamera();
       }
     });
   }, []);
 
   const moveBall = (dir) => {
     const ball = ballRef.current;
-    const top = parseInt(ball.style.top || "100", 10);
-    const left = parseInt(ball.style.left || "100", 10);
+    const top = parseInt(ball.style.top || "100");
+    const left = parseInt(ball.style.left || "100");
 
     if (dir === "up") ball.style.top = `${top - 10}px`;
     if (dir === "down") ball.style.top = `${top + 10}px`;
@@ -36,54 +44,56 @@ export default function MobileView() {
 
   const startCamera = async () => {
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      console.log("🎥 Attempting to access camera...");
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       videoRef.current.srcObject = stream;
-      videoRef.current.play();
 
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
 
-      const sendFrames = () => {
-        if (!cameraOn) return;
-
-        canvas.width = 320;
-        canvas.height = 240;
-        ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-        const frame = canvas.toDataURL("image/jpeg", 0.5);
-        socket.emit("camera-frame", frame);
-
-        setTimeout(sendFrames, 200);
+      videoRef.current.onloadedmetadata = () => {
+        videoRef.current.play();
+        const sendFrames = () => {
+          if (!cameraActive) return;
+          canvas.width = videoRef.current.videoWidth;
+          canvas.height = videoRef.current.videoHeight;
+          ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+          const frame = canvas.toDataURL("image/jpeg", 0.4);
+          socket.emit("camera-frame", frame);
+          setTimeout(sendFrames, 200);
+        };
+        sendFrames();
       };
-
-      sendFrames();
     } catch (err) {
-      console.error("Camera error:", err);
-    }
-  };
-
-  const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      videoRef.current.srcObject = null;
+      console.error("❌ Camera access failed:", err);
+      alert("Camera access denied or not supported.");
     }
   };
 
   return (
-    <div className="bg-white h-screen w-screen relative overflow-hidden">
-      <h2 className="text-center text-xl font-semibold py-4 text-gray-800">📱 Mobile View</h2>
-
+    <div style={{ position: "relative", height: "100vh", background: "#f0f0f0" }}>
+      <h1 style={{ textAlign: "center" }}>📱 Mobile Ball + Camera View</h1>
       <div
         ref={ballRef}
-        className="absolute bg-red-500 rounded-full"
         style={{
           width: 50,
           height: 50,
+          background: "red",
+          borderRadius: "50%",
+          position: "absolute",
           top: "100px",
           left: "100px",
         }}
       ></div>
-
-      <video ref={videoRef} autoPlay playsInline muted className="hidden" />
+      <video
+        ref={videoRef}
+        autoPlay
+        muted
+        playsInline
+        style={{ display: "none" }}
+      />
     </div>
   );
-}
+};
+
+export default MobileView;
