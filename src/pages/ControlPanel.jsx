@@ -9,6 +9,7 @@ export default function ControlPanel() {
 
   useEffect(() => {
     socket.on("camera-frame", (data) => {
+      console.log("🖥️ Got frame on control panel");
       setImageSrc(data); // ✅ Frame received here
     });
   }, []);

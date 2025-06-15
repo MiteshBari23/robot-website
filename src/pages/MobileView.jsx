@@ -26,12 +26,16 @@ export default function MobileView() {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext("2d");
 
+      console.log("✅ Camera started");
+
+      
       const sendFrame = () => {
         if (!cameraActive) return;
         canvas.width = 320;
         canvas.height = 240;
         ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
         const frame = canvas.toDataURL("image/jpeg", 0.4);
+        console.log("📤 Emitting frame...");
         socket.emit("camera-frame", frame); // ✅ Emit to server
         setTimeout(sendFrame, 200); // Repeat every 200ms
       };
