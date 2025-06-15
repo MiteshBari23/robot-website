@@ -21,7 +21,7 @@ export default function About() {
           <div className="col-md-6">
             <h4>Innovating the Future with Intelligent Robotics</h4>
             <p className="mt-3">
-              At <strong>IntelliBots</strong>, we are pioneering the future of robotics by blending artificial intelligence with human-centric design.
+              At <strong>IntelliBots</strong>, we are pioneering the future of robotics by blending artificial intelligence (AI)with human-centric design.
               Whether it's home automation, industrial automation, or educational bots, our mission is simple: make robotics intelligent, accessible, and impactful.
             </p>
             <p>
