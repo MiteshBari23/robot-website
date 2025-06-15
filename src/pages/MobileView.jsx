@@ -1,27 +1,24 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import io from "socket.io-client";
 
-const backendURL = import.meta.env.PROD
-  ? "https://website-and-cloudgame-2.onrender.com/"
-  : "http://localhost:5000";
+const socket = io("https://website-and-cloudgame-2.onrender.com");
 
-const socket = io(backendURL);
-
-const MobileView = () => {
+export default function MobileView() {
   const ballRef = useRef(null);
   const videoRef = useRef(null);
-  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraOn, setCameraOn] = useState(false);
+  let stream;
 
   useEffect(() => {
-    socket.on("move-ball", (dir) => {
-      moveBall(dir);
-    });
+    socket.on("move-ball", (dir) => moveBall(dir));
 
-    socket.on("toggle-camera", (status) => {
-      const isActive = status === "on";
-      setCameraActive(isActive);
-      if (isActive) {
+    socket.on("toggle-camera", (state) => {
+      if (state === "on") {
+        setCameraOn(true);
         startCamera();
+      } else {
+        setCameraOn(false);
+        stopCamera();
       }
     });
   }, []);
@@ -39,7 +36,7 @@ const MobileView = () => {
 
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      stream = await navigator.mediaDevices.getUserMedia({ video: true });
       videoRef.current.srcObject = stream;
       videoRef.current.play();
 
@@ -47,12 +44,12 @@ const MobileView = () => {
       const ctx = canvas.getContext("2d");
 
       const sendFrames = () => {
-        if (!cameraActive) return;
+        if (!cameraOn) return;
 
         canvas.width = 320;
         canvas.height = 240;
         ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-        const frame = canvas.toDataURL("image/jpeg", 0.4);
+        const frame = canvas.toDataURL("image/jpeg", 0.5);
         socket.emit("camera-frame", frame);
 
         setTimeout(sendFrames, 200);
@@ -60,36 +57,33 @@ const MobileView = () => {
 
       sendFrames();
     } catch (err) {
-      console.error("❌ Camera access failed:", err);
+      console.error("Camera error:", err);
+    }
+  };
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
+      videoRef.current.srcObject = null;
     }
   };
 
   return (
-    <div style={{ position: "relative", height: "100vh", background: "#f0f0f0" }}>
-      <h1 style={{ textAlign: "center" }}>📱 Mobile Ball + Camera View</h1>
+    <div className="bg-white h-screen w-screen relative overflow-hidden">
+      <h2 className="text-center text-xl font-semibold py-4 text-gray-800">📱 Mobile View</h2>
 
       <div
         ref={ballRef}
+        className="absolute bg-red-500 rounded-full"
         style={{
           width: 50,
           height: 50,
-          background: "red",
-          borderRadius: "50%",
-          position: "absolute",
           top: "100px",
           left: "100px",
         }}
       ></div>
 
-      <video
-        ref={videoRef}
-        autoPlay
-        muted
-        playsInline
-        style={{ display: "none" }}
-      />
+      <video ref={videoRef} autoPlay playsInline muted className="hidden" />
     </div>
   );
-};
-
-export default MobileView;
+}
