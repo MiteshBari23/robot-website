@@ -87,7 +87,7 @@ export default function OffcanvasExample({ user, setUser }) {
             <Nav.Link as={Link} to="/controller" className="text-light">
               Control Panel
             </Nav.Link>
-            <Nav.Link as={Link} to="/mobile" className="text-light">
+            <Nav.Link as={Link} to="/phone" className="text-light">
               mobile view
             </Nav.Link>
             <NavDropdown title="More" menuVariant="dark">
