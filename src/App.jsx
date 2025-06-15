@@ -9,7 +9,6 @@ import Cart from "./pages/Cart";
 import ThankYou from "./pages/ThankYou";
 import ControlPanel from "./pages/ControlPanel";
 import PhoneCam from "./pages/PhoneCam";
-
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { useState } from "react";
 
