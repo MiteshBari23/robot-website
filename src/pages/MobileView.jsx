@@ -9,8 +9,6 @@ export default function MobileView() {
   const [cameraActive, setCameraActive] = useState(false);
 
   useEffect(() => {
-    console.log("📱 MobileView mounted");
-
     socket.on("move-ball", (dir) => {
       moveBall(dir);
     });
@@ -52,7 +50,6 @@ export default function MobileView() {
         ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
         const frame = canvas.toDataURL("image/jpeg", 0.4);
         socket.emit("camera-frame", frame);
-        console.log("📸 Frame sent");
       }, 200);
     } catch (err) {
       console.error("❌ Camera access failed:", err);
@@ -60,30 +57,28 @@ export default function MobileView() {
   };
 
   return (
-    <div style={{ position: "relative", height: "100vh", background: "#f0f0f0" }}>
-      <h1 style={{ textAlign: "center" }}>📱 Mobile Ball + Camera View</h1>
+    <div className="relative h-screen bg-gray-900 text-white flex flex-col items-center justify-start p-4">
+      <h1 className="text-2xl font-bold mb-2">📱 Mobile View</h1>
 
-      {/* Red Ball */}
-      <div
-        ref={ballRef}
-        style={{
-          width: 50,
-          height: 50,
-          background: "red",
-          borderRadius: "50%",
-          position: "absolute",
-          top: "100px",
-          left: "100px",
-        }}
-      />
-
-      {/* Hidden Video Feed */}
+      {/* Camera Feed Display */}
       <video
         ref={videoRef}
         autoPlay
         muted
         playsInline
-        style={{ display: "none" }}
+        className="rounded-md shadow-md w-full max-w-sm mb-4"
+      />
+
+      {/* Ball */}
+      <div
+        ref={ballRef}
+        className="absolute bg-red-600 rounded-full"
+        style={{
+          width: 50,
+          height: 50,
+          top: "150px",
+          left: "100px",
+        }}
       />
     </div>
   );

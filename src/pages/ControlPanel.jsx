@@ -30,10 +30,10 @@ export default function ControlPanel() {
         <img
           src={imageSrc}
           alt="Live Feed"
-          className="rounded-lg shadow-lg w-full max-w-lg mb-4"
+          className="rounded-lg shadow-lg w-full max-w-md mb-4"
         />
       ) : (
-        <p>Waiting for camera feed...</p>
+        <p className="mb-4 text-gray-400">Waiting for camera feed...</p>
       )}
 
       <button
@@ -46,18 +46,10 @@ export default function ControlPanel() {
       </button>
 
       <div className="grid grid-cols-3 gap-2">
-        <button onClick={() => move("up")} className="col-start-2 bg-blue-600 p-2 rounded">
-          ⬆️
-        </button>
-        <button onClick={() => move("left")} className="bg-blue-600 p-2 rounded">
-          ⬅️
-        </button>
-        <button onClick={() => move("down")} className="col-start-2 bg-blue-600 p-2 rounded">
-          ⬇️
-        </button>
-        <button onClick={() => move("right")} className="bg-blue-600 p-2 rounded">
-          ➡️
-        </button>
+        <button onClick={() => move("up")} className="col-start-2 bg-blue-600 p-2 rounded">⬆️</button>
+        <button onClick={() => move("left")} className="bg-blue-600 p-2 rounded">⬅️</button>
+        <button onClick={() => move("down")} className="col-start-2 bg-blue-600 p-2 rounded">⬇️</button>
+        <button onClick={() => move("right")} className="bg-blue-600 p-2 rounded">➡️</button>
       </div>
     </div>
   );
