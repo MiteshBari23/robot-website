@@ -8,7 +8,7 @@ import LandingPage from "./pages/LandingPage";
 import Cart from "./pages/Cart";
 import ThankYou from "./pages/ThankYou";
 import ControlPanel from "./pages/ControlPanel";
-import MobileView from "./pages/MobileView";
+import PhoneCam from "./pages/PhoneCam";
 
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { useState } from "react";
@@ -26,8 +26,8 @@ function App() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/thankyou" element={<ThankYou />} />
+        <Route path="/phone" element={<PhoneCam />} />
         <Route path="/controller" element={<ControlPanel />} />
-        <Route path="/mobile" element={<MobileView />} />
       </Routes>
     </Router>
   );
