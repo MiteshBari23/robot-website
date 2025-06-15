@@ -1,3 +1,4 @@
+import React from "react";
 import Button from "react-bootstrap/Button";
 import Container from "react-bootstrap/Container";
 import Form from "react-bootstrap/Form";
@@ -7,10 +8,9 @@ import NavDropdown from "react-bootstrap/NavDropdown";
 import { useState, useEffect } from "react";
 import { auth, provider } from "../firebase";
 import { signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
-import { Link } from 'react-router-dom';
+import { Link } from "react-router-dom";
 
 export default function OffcanvasExample({ user, setUser }) {
-
   const login = async () => {
     try {
       const result = await signInWithPopup(auth, provider);
@@ -35,9 +35,9 @@ export default function OffcanvasExample({ user, setUser }) {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    if (searchTerm.trim() !== '') {
+    if (searchTerm.trim() !== "") {
       // Replace this with your search logic or redirect
-      console.log('Searching for:', searchTerm);
+      console.log("Searching for:", searchTerm);
       // e.g., navigate(`/search?query=${searchTerm}`);
     }
   };
@@ -46,8 +46,7 @@ export default function OffcanvasExample({ user, setUser }) {
     <Navbar
       expand="md"
       fixed="top"
-     style={{ backgroundColor: "#0f172a", marginBottom: "1rem" }}
-
+      style={{ backgroundColor: "#0f172a", marginBottom: "1rem" }}
       variant="dark"
       className="shadow-sm py-2"
     >
@@ -79,19 +78,26 @@ export default function OffcanvasExample({ user, setUser }) {
 
         <Navbar.Collapse id="main-navbar-collapse">
           <Nav className="ms-auto d-flex align-items-center gap-3 text-center text-md-start mt-3 mt-md-0">
-            <Nav.Link as={Link} to ="/" className="text-light">
+            <Nav.Link as={Link} to="/" className="text-light">
               Home
             </Nav.Link>
             <Nav.Link as={Link} to="/shop" className="text-light">
               Shop
             </Nav.Link>
-             <Nav.Link as={Link} to="/tools/cloud-ball" className="text-light">
-              Ball 
+            <Nav.Link as={Link} to="/controller" className="text-light">
+              Control Panel
+            </Nav.Link>
+            <Nav.Link as={Link} to="/mobile" className="text-light">
+              mobile view
             </Nav.Link>
             <NavDropdown title="More" menuVariant="dark">
-              <NavDropdown.Item as={Link} to="/contact">Contact</NavDropdown.Item>
+              <NavDropdown.Item as={Link} to="/contact">
+                Contact
+              </NavDropdown.Item>
               <NavDropdown.Divider />
-              <NavDropdown.Item as={Link} to="/about">About Us</NavDropdown.Item>
+              <NavDropdown.Item as={Link} to="/about">
+                About Us
+              </NavDropdown.Item>
             </NavDropdown>
             {user && (
               <Nav.Link as={Link} to="/cart" className="text-light">

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Laptop Controller</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    h2 {
+      margin-bottom: 20px;
+    }
+    .controls {
+      display: grid;
+      grid-template-areas:
+        ". up ."
+        "left . right"
+        ". down .";
+      gap: 10px;
+    }
+    button {
+      padding: 15px 20px;
+      font-size: 18px;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      background-color: #007bff;
+      color: white;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    #liveFeed {
+      max-width: 400px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Control Ball with Arrow Keys or Buttons</h2>
+
+  <div class="controls">
+    <button style="grid-area: up;" onclick="sendMove('ArrowUp')">↑</button>
+    <button style="grid-area: left;" onclick="sendMove('ArrowLeft')">←</button>
+    <button style="grid-area: right;" onclick="sendMove('ArrowRight')">→</button>
+    <button style="grid-area: down;" onclick="sendMove('ArrowDown')">↓</button>
+  </div>
+
+  <br><br>
+
+  <button id="startCamera">Start Phone Camera</button>
+  <br>
+  <img id="liveFeed" />
+
+  <!-- Load Socket.IO -->
+  <script src="https://game-2-uzle.onrender.com/laptop.html/socket.io/socket.io.js"></script>
+  <script>
+    // Declare only once
+    const socket = io("https://game-2-uzle.onrender.com/laptop.html");
+
+    // Send direction from arrow key
+    document.addEventListener('keydown', (e) => {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        socket.emit('move', { direction: e.key });
+      }
+    });
+
+    // Send direction from button click
+    function sendMove(direction) {
+      socket.emit('move', { direction });
+    }
+
+    // Send camera start signal
+    document.getElementById('startCamera').addEventListener('click', () => {
+      socket.emit('start-camera');
+    });
+
+    // Display camera stream as image updates
+    socket.on('camera-frame', (data) => {
+      document.getElementById('liveFeed').src = data;
+    });
+  </script>
+</body>
+</html>

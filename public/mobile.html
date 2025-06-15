@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Mobile Ball</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #222;
+    }
+    #ball {
+      width: 50px;
+      height: 50px;
+      background: red;
+      border-radius: 50%;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    #camera {
+      width: 100%;
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="ball"></div>
+  <video id="camera" autoplay playsinline></video>
+
+  <!-- Load socket.io -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io(); // Initialize socket once
+
+    // Ball control
+    const ball = document.getElementById('ball');
+    let x = window.innerWidth / 2;
+    let y = window.innerHeight / 2;
+
+    socket.on('move', ({ direction }) => {
+      const step = 20;
+      if (direction === 'ArrowUp') y -= step;
+      if (direction === 'ArrowDown') y += step;
+      if (direction === 'ArrowLeft') x -= step;
+      if (direction === 'ArrowRight') x += step;
+      ball.style.left = x + 'px';
+      ball.style.top = y + 'px';
+    });
+
+    // Camera stream
+    const video = document.getElementById('camera');
+
+    socket.on('start-camera', async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        video.style.display = 'block';
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Send frames every 100ms
+        setInterval(() => {
+          if (!video.videoWidth) return;
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          ctx.drawImage(video, 0, 0);
+          const imgData = canvas.toDataURL('image/jpeg', 0.5);
+          socket.emit('camera-frame', imgData);
+        }, 100);
+      } catch (err) {
+        console.error('Camera access denied:', err);
+        alert('Please allow camera access');
+      }
+    });
+  </script>
+</body>
+</html>

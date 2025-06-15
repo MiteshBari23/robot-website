@@ -1,3 +1,5 @@
+import React from "react";
+
 import Navbar from "./components/Navbar";
 import Shop from "./pages/Shop";
 import About from "./pages/About";
@@ -5,7 +7,8 @@ import Contact from "./pages/Contact";
 import LandingPage from "./pages/LandingPage";
 import Cart from "./pages/Cart";
 import ThankYou from "./pages/ThankYou";
-import CloudBallGame from "./pages/tools/CloudBallGame";
+import ControlPanel from "./pages/ControlPanel";
+import MobileView from "./pages/MobileView";
 
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { useState } from "react";
@@ -23,11 +26,11 @@ function App() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/thankyou" element={<ThankYou />} />
-        <Route path="/tools/cloud-ball" element={<CloudBallGame />} />
+        <Route path="/controller" element={<ControlPanel />} />
+        <Route path="/mobile" element={<MobileView />} />
       </Routes>
     </Router>
   );
 }
 
 export default App;
-

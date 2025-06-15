@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import io from "socket.io-client";
 
-const socket = io("https://robot-website-1.onrender.com"); // Replace with your actual backend URL
+const socket = io("https://robot-kl4k.onrender.com"); // Replace with your actual backend URL
 
 export default function CloudBallGame() {
   const [isCameraOn, setIsCameraOn] = useState(false);
