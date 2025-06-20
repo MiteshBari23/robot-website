@@ -51,7 +51,7 @@ const PhoneCam = () => {
 
         const getLocalStream = async () => {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true}); // truns on vdo on audio: true will turn on audio 
                 if (localVideoRef.current) {
                     localVideoRef.current.srcObject = stream;
                 }
