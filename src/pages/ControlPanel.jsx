@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 
-const NODE_SERVER_URL = "https://website-and-cloudgame-2.onrender.com";
+const NODE_SERVER_URL = "http://192.168.148.149:3000";
 
 const ControlPanel = () => {
     const remoteVideoRef = useRef(null);
@@ -11,7 +11,7 @@ const ControlPanel = () => {
     const [availablePhones, setAvailablePhones] = useState([]);
     const [selectedPhoneId, setSelectedPhoneId] = useState("");
     const [status, setStatus] = useState("Connecting to server...");
-    const [overlayOn, setOverlayOn] = useState(false); // NEW: overlay toggle
+    const [overlayOn, setOverlayOn] = useState(false);
 
     useEffect(() => {
         socket.current = io(NODE_SERVER_URL);
@@ -30,9 +30,6 @@ const ControlPanel = () => {
         socket.current.on("available_phones", (phones) => {
             console.log("Available phones:", phones);
             setAvailablePhones(phones);
-            // if (!selectedPhoneId && phones.length > 0) {
-            //     setSelectedPhoneId(phones[0]);
-            // }
         });
 
         socket.current.on("sdp_offer_from_phone", async ({ sdpOffer, phoneDeviceId }) => {
@@ -137,14 +134,14 @@ const ControlPanel = () => {
         }
     };
 
-    const sendCommand = (cmd) => {
+    const sendPose = (pose) => {
         if (!selectedPhoneId) {
             alert("Please select a phone to control.");
             return;
         }
         if (socket.current) {
-            socket.current.emit("control", { cmd, targetPhoneId: selectedPhoneId });
-            console.log(`Command "${cmd}" sent to ${selectedPhoneId}`);
+            socket.current.emit("pose-change", pose);
+            console.log(`Sent pose command: ${pose}`);
         }
     };
 
@@ -183,18 +180,25 @@ const ControlPanel = () => {
                 <p style={styles.noPhoneMessage}>Please select a phone to view its live feed.</p>
             )}
 
-            {/* Toggle Overlay */}
             {selectedPhoneId && (
                 <button onClick={() => setOverlayOn(!overlayOn)} style={styles.toggleButton}>
                     {overlayOn ? "Turn On Stream View" : "Turn Off Stream View"}
                 </button>
             )}
 
-            {/* Controls */}
+            {/* Robot Pose Controls */}
             <div style={styles.controlButtons}>
-                <button onClick={() => sendCommand("left")} style={styles.controlBtn}>⬅️ Left</button>
-                <button onClick={() => sendCommand("right")} style={styles.controlBtn}>➡️ Right</button>
-                <button onClick={() => sendCommand("jump")} style={styles.controlBtn}>⬆️ Jump</button>
+                <button onClick={() => sendPose("legs-forward")} style={styles.controlBtn}>Legs Forward</button>
+                <button onClick={() => sendPose("legs-back")} style={styles.controlBtn}>Legs Back</button>
+                <button onClick={() => sendPose("sit")} style={styles.controlBtn}>Sit</button>
+                <button onClick={() => sendPose("stand")} style={styles.controlBtn}>Stand</button>
+                <button onClick={() => sendPose("head-rotate")} style={styles.controlBtn}>Rotate Head</button>
+                <button onClick={() => sendPose("chest-bend")} style={styles.controlBtn}>Chest Bend</button>
+                <button onClick={() => sendPose("larm-up")} style={styles.controlBtn}>Left Arm Up</button>
+                <button onClick={() => sendPose("larm-down")} style={styles.controlBtn}>Left Arm Down</button>
+                <button onClick={() => sendPose("rarm-up")} style={styles.controlBtn}>Right Arm Up</button>
+                <button onClick={() => sendPose("rarm-down")} style={styles.controlBtn}>Right Arm Down</button>
+                <button onClick={() => sendPose("reset")} style={styles.controlBtn}>Reset</button>
             </div>
         </div>
     );

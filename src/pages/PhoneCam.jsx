@@ -1,212 +1,131 @@
-import React, { useEffect, useRef, useState } from "react";
+// ✅ PhoneCam.jsx
+import React, { useEffect, useRef } from "react";
+import { Canvas } from "@react-three/fiber";
+import { OrbitControls } from "@react-three/drei";
+import URDFLoader from "urdf-loader";
+import * as THREE from "three";
 import { io } from "socket.io-client";
 
-// IMPORTANT: Replace with your deployed Node.js server URL if it's different
-const NODE_SERVER_URL = "https://website-and-cloudgame-2.onrender.com";
-const PHONE_DEVICE_ID = `phone-${Math.random().toString(36).substring(7)}`;
+const socket = io("http://192.168.148.149:3000");
+window.socket = socket;
 
-const PhoneCam = () => {
-    const localVideoRef = useRef(null);
-    const peerConnection = useRef(null);
-    const socket = useRef(null);
+function URDFRobot() {
+  const robotRef = useRef();
 
-    const [status, setStatus] = useState("Connecting to server...");
+  useEffect(() => {
+    const manager = new THREE.LoadingManager();
+    const loader = new URDFLoader(manager);
+    loader.packages = "/model/";
 
-    // This useEffect handles Socket.IO connections and events
-    useEffect(() => {
-        socket.current = io(NODE_SERVER_URL);
+    loader.load(
+      "/model/jaxon_jvrc.urdf",
+      (robot) => {
+        robot.rotation.y = Math.PI; // Face the robot toward the camera
+        robotRef.current.add(robot);
+        robotRef.current.robot = robot;
+        window.robot = robot;
 
-        socket.current.on("connect", () => {
-            setStatus("Connected to server. Registering phone...");
-            socket.current.emit("register_phone", PHONE_DEVICE_ID);
+        robot.traverse((child) => {
+          if (child.jointType) {
+            console.log("🔩 Joint:", child.name, "| Type:", child.jointType);
+          }
         });
 
-        socket.current.on("connect_error", (err) => {
-            console.error("Socket.IO Connect Error:", err);
-            setStatus(`Connection Error: ${err.message}`);
+        socket.on("joint-control", ({ joint, value }) => {
+          console.log("🛰️ Received joint-control event on Phone:", {
+            joint,
+            value,
+          });
+          if (robot.joints[joint]) {
+            robot.joints[joint].setJointValue(value);
+            console.log(`🎯 Updated joint '${joint}' to value: ${value}`);
+          } else {
+            console.warn(`⚠️ Joint '${joint}' not found in robot`);
+          }
         });
 
-        // Event: Laptop requests a WebRTC offer from this phone
-        socket.current.on("start_webrtc_offer", async ({ requestingLaptopSocketId }) => {
-            setStatus("Laptop requested stream. Setting up WebRTC...");
-            await setupPeerConnection(requestingLaptopSocketId);
+        socket.on("pose-change", (pose) => {
+          console.log("📲 Pose received:", pose);
+          const set = (j, v) => robot.joints[j]?.setJointValue(v);
+
+          switch (pose) {
+            case "legs-forward":
+              set("LLEG_JOINT2", 0.5);
+              set("RLEG_JOINT2", 0.5);
+              break;
+            case "legs-back":
+              set("LLEG_JOINT2", -0.5);
+              set("RLEG_JOINT2", -0.5);
+              break;
+            case "sit":
+              set("LLEG_JOINT2", -0.7);
+              set("LLEG_JOINT3", 1.2);
+              set("RLEG_JOINT2", -0.7);
+              set("RLEG_JOINT3", 1.2);
+              break;
+            case "stand":
+              for (let i = 0; i <= 5; i++) {
+                set(`LLEG_JOINT${i}`, 0);
+                set(`RLEG_JOINT${i}`, 0);
+              }
+              break;
+            case "head-rotate":
+              set("HEAD_JOINT0", 0.5);
+              break;
+            case "chest-bend":
+              set("CHEST_JOINT1", 0.4);
+              break;
+            case "larm-up":
+              set("LARM_JOINT1", -0.6);
+              break;
+            case "larm-down":
+              set("LARM_JOINT1", 0.6);
+              break;
+            case "rarm-up":
+              set("RARM_JOINT1", -0.6);
+              break;
+            case "rarm-down":
+              set("RARM_JOINT1", 0.6);
+              break;
+            case "reset":
+              Object.keys(robot.joints).forEach((jointName) => {
+                robot.joints[jointName].setJointValue(0);
+              });
+              break;
+            default:
+              break;
+          }
         });
-
-        // Event: Laptop sends its SDP Answer
-        socket.current.on("sdp_answer_from_laptop", async (sdpAnswer) => {
-            setStatus("Received SDP Answer. Establishing connection...");
-            if (peerConnection.current && peerConnection.current.remoteDescription === null) {
-                await peerConnection.current.setRemoteDescription(new RTCSessionDescription(sdpAnswer));
-                console.log("Phone: Remote description set (Answer).");
-            }
-        });
-
-        // Event: Laptop sends its ICE Candidates
-        socket.current.on("ice_candidate_from_laptop", async (candidate) => {
-            if (peerConnection.current && candidate) {
-                await peerConnection.current.addIceCandidate(candidate);
-                console.log("Phone: Added remote ICE candidate.");
-            }
-        });
-
-        // Event: Control command received from laptop
-        socket.current.on("control", (cmd) => {
-            setStatus(`Command received: ${cmd}`);
-            const char = document.getElementById("character");
-            if (!char) return;
-
-            const currentLeft = parseInt(char.style.left || "140");
-
-            if (cmd === "left") {
-                char.style.left = Math.max(currentLeft - 20, 0) + "px";
-            } else if (cmd === "right") {
-                char.style.left = Math.min(currentLeft + 20, 280) + "px";
-            } else if (cmd === "jump") {
-                char.style.transition = "bottom 0.3s ease-out";
-                char.style.bottom = "100px";
-                setTimeout(() => {
-                    char.style.bottom = "10px";
-                }, 300);
-            }
-        });
-
-        socket.current.on("disconnect", () => {
-            setStatus("Disconnected from server.");
-            console.log("Phone: Disconnected from server.");
-        });
-
-        // Function to get local camera stream
-        const getLocalStream = async () => {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                if (localVideoRef.current) {
-                    localVideoRef.current.srcObject = stream;
-                }
-                return stream;
-            } catch (err) {
-                setStatus(`Camera access denied or unavailable: ${err.message}`);
-                console.error("Camera error:", err);
-                alert("Camera access denied or unavailable. Please allow camera permissions.");
-                return null;
-            }
-        };
-
-        let localStream = null;
-        getLocalStream().then(stream => {
-            localStream = stream;
-        });
-
-        // Cleanup on unmount
-        return () => {
-            if (peerConnection.current) {
-                peerConnection.current.close();
-                peerConnection.current = null;
-            }
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-                localStream = null;
-            }
-            if (socket.current) {
-                socket.current.disconnect();
-            }
-        };
-    }, []); // Empty dependency array means this runs once on mount
-
-    // This function sets up the RTCPeerConnection and handles SDP/ICE
-    const setupPeerConnection = async (requestingLaptopSocketId) => {
-        // Close existing PC if any
-        if (peerConnection.current) {
-            peerConnection.current.close();
-        }
-
-        const pc = new RTCPeerConnection({
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-            ]
-        });
-        peerConnection.current = pc; // Store in ref
-
-        // WebRTC: Log ICE connection state changes
-        pc.oniceconnectionstatechange = () => {
-            console.log('Phone ICE connection state:', pc.iceConnectionState);
-            // You might want to update a visible status on the phone's UI as well
-            setStatus(`ICE State: ${pc.iceConnectionState}`);
-        };
-
-
-        // Add local camera stream to the peer connection
-        if (localVideoRef.current && localVideoRef.current.srcObject) {
-            localVideoRef.current.srcObject.getTracks().forEach(track => pc.addTrack(track, localVideoRef.current.srcObject));
-            console.log("Phone: Local stream added to PeerConnection.");
-        } else {
-            console.error("Phone: No local stream found to add to PeerConnection.");
-            setStatus("Error: No local stream to start WebRTC.");
-            return;
-        }
-
-        // Event: When ICE candidates are generated, send them to laptop via signaling server
-        pc.onicecandidate = (event) => {
-            if (event.candidate) {
-                console.log("Phone: Sending ICE candidate to laptop.");
-                socket.current.emit("ice_candidate_from_phone", {
-                    candidate: event.candidate,
-                    phoneDeviceId: PHONE_DEVICE_ID,
-                    requestingLaptopSocketId: requestingLaptopSocketId
-                });
-            }
-        };
-
-        try {
-            // Create and send SDP Offer
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            console.log("Phone: Sending SDP Offer to laptop.");
-            socket.current.emit("sdp_offer_from_phone", {
-                sdpOffer: offer,
-                phoneDeviceId: PHONE_DEVICE_ID,
-                requestingLaptopSocketId: requestingLaptopSocketId
-            });
-            setStatus("Offer sent. Waiting for answer...");
-        } catch (error) {
-            console.error("Phone: Error creating or sending offer:", error);
-            setStatus(`Error setting up WebRTC: ${error.message}`);
-        }
-    };
-
-    return (
-        <div>
-            <h2>📱 Phone Camera & Character</h2>
-            <p>Status: {status}</p>
-            <p>Your Device ID: {PHONE_DEVICE_ID}</p>
-            <video ref={localVideoRef} autoPlay playsInline muted width="320" height="240" style={{ border: '1px solid gray' }} />
-
-            {/* Character Container */}
-            <div
-                style={{
-                    position: "relative",
-                    width: "320px",
-                    height: "240px",
-                    backgroundColor: "#eee",
-                    marginTop: "10px",
-                    overflow: "hidden", // Ensures character stays within bounds
-                }}
-            >
-                <div
-                    id="character"
-                    style={{
-                        width: "40px",
-                        height: "40px",
-                        backgroundColor: "blue",
-                        borderRadius: "50%",
-                        position: "absolute",
-                        bottom: "10px",
-                        left: "140px", // Centered horizontally
-                        transition: "left 0.3s ease-out, bottom 0.3s ease-out",
-                    }}
-                ></div>
-            </div>
-        </div>
+      },
+      undefined,
+      (err) => console.error("Failed to load URDF", err)
     );
-};
+  }, []);
 
-export default PhoneCam;
+  return <group ref={robotRef} />;
+}
+
+export default function PhoneCam() {
+  return (
+    <div style={{ height: "100vh", background: "#FFFFFF" }}>
+      <Canvas camera={{ position: [0, 1.5, 3], fov: 50 }} style={{ background: "white" }}>
+        <ambientLight />
+        <directionalLight position={[2, 2, 2]} />
+        <URDFRobot />
+        <OrbitControls />
+      </Canvas>
+    </div>
+  );
+}
+
+const styles = {
+  container: { marginTop: "80px", padding: "20px", textAlign: "center" },
+  heading: { fontSize: "24px", marginBottom: "10px" },
+  poseText: { fontSize: "16px", marginBottom: "20px" },
+  canvasWrapper: {
+    height: "400px",
+    borderRadius: "10px",
+    overflow: "hidden",
+    boxShadow: "0 4px 10px rgb(254, 254, 254)",
+  },
+};
