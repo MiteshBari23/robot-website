@@ -1,38 +1,47 @@
-const express = require("express");
-const http = require("http");
-const cors = require("cors");
-const { Server } = require("socket.io");
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const path = require('path');
 
 const app = express();
-app.use(cors());
-
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "*", // Allow all origins for testing
-    methods: ["GET", "POST"]
-  }
+const io = new Server(server, { cors: { origin: '*' } });
+
+// Serve React static build
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+
 });
 
-io.on("connection", (socket) => {
-  console.log("✅ Client connected:", socket.id);
+// Socket.IO communication
+io.on('connection', (socket) => {
+  console.log('📲 Client connected:', socket.id);
 
-  // Movement command (from laptop)
-  socket.on("move", (direction) => {
-    socket.broadcast.emit("move", direction);
+  socket.on('pose-change', (pose) => {
+    console.log(`🔄 Relaying pose: ${pose}`);
+    socket.broadcast.emit('pose-change', pose);
   });
 
-  // Camera data (from mobile)
-  socket.on("camera-data", (chunk) => {
-    socket.broadcast.emit("camera-data", chunk);
+  socket.on('joint-control', (data) => {
+    console.log(`🎚️ Relaying joint-control:`, data);
+    socket.broadcast.emit('joint-control', data);
   });
 
-  socket.on("disconnect", () => {
-    console.log("❌ Client disconnected:", socket.id);
+  socket.on('camera-frame', (frameDataURL) => {
+    socket.broadcast.emit('camera-frame', frameDataURL);
+  });
+
+  socket.on('start-camera', () => {
+    socket.broadcast.emit('start-camera');
+  });
+
+  socket.on('disconnect', () => {
+    console.log('❌ Client disconnected:', socket.id);
   });
 });
-
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`🚀 Server listening on port ${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
 });

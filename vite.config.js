@@ -8,12 +8,7 @@ export default defineConfig({
     outDir: 'dist', // ✅ ensure this
   },
   server: {
-    proxy: {
-      '/socket.io': {
-        target: 'http://localhost:5000',
-        ws: true,
-      },
-    },
+    
   },
   resolve: {
     alias: {

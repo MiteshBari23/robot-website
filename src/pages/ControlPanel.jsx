@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 
-const NODE_SERVER_URL = "https://backend-746d.onrender.com";
+const NODE_SERVER_URL = "http://192.168.148.149:3000";
 
 const ControlPanel = () => {
     const remoteVideoRef = useRef(null);
