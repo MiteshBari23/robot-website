@@ -30,9 +30,9 @@ const ControlPanel = () => {
         socket.current.on("available_phones", (phones) => {
             console.log("Available phones:", phones);
             setAvailablePhones(phones);
-            if (!selectedPhoneId && phones.length > 0) {
-                setSelectedPhoneId(phones[0]);
-            }
+            // if (!selectedPhoneId && phones.length > 0) {
+            //     setSelectedPhoneId(phones[0]);
+            // }
         });
 
         socket.current.on("sdp_offer_from_phone", async ({ sdpOffer, phoneDeviceId }) => {
