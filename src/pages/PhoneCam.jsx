@@ -6,7 +6,7 @@ import URDFLoader from "urdf-loader";
 import * as THREE from "three";
 import { io } from "socket.io-client";
 
-const socket = io("http://192.168.148.149:3000");
+const socket = io("https://website-and-cloudgame-2.onrender.com");
 window.socket = socket;
 
 function URDFRobot() {
