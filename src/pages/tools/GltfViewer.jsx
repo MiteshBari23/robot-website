@@ -22,6 +22,19 @@ function URDFRobot() {
       // Fix orientation
       robot.rotation.y = Math.PI;
 
+      robot.traverse((child) => {
+        if (child.isMesh) {
+          if (!child.geometry.attributes.normal) {
+            child.geometry.computeVertexNormals();
+          }
+          // child.material = new THREE.MeshStandardMaterial({
+          //   color: 0x6699ff,
+          //   metalness: 0.3,
+          //   roughness: 0.7,
+          // });
+        }
+      });
+
       // Log joints
       robot.traverse((child) => {
         if (child.jointType) {
@@ -62,9 +75,13 @@ function URDFRobot() {
 export default function GltfViewer() {
   return (
     <div style={{ height: "100vh", background: "#fff" }}>
-      <Canvas camera={{ position: [0, 2, 4], fov: 50 }} style={{ background: "white" }}>
-        <ambientLight />
-        <directionalLight position={[2, 2, 2]} />
+      <Canvas
+        camera={{ position: [0, 2, 4], fov: 50 }}
+        style={{ background: "white" }}
+        gl={{ outputColorSpace: THREE.SRGBColorSpace }}
+      >
+        <ambientLight intensity={0.7} />
+        <directionalLight position={[2, 2, 2]} intensity={1.5} />
         <URDFRobot />
         <OrbitControls />
       </Canvas>
