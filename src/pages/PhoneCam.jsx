@@ -4,11 +4,36 @@ import { OrbitControls } from "@react-three/drei";
 import URDFLoader from "urdf-loader";
 import * as THREE from "three";
 import { io } from "socket.io-client";
-import { Hands } from "@mediapipe/hands";
+import { Holistic } from "@mediapipe/holistic";
 import { Camera } from "@mediapipe/camera_utils";
+
 const NODE_SERVER_URL = "https://website-and-cloudgame-2.onrender.com";
 const PHONE_DEVICE_ID = `phone-${Math.random().toString(36).substring(7)}`;
 let robotInstance = null;
+
+const flipY = (pt) => ({ x: pt.x, y: -pt.y });
+
+function getSignedJointAngle(a, b, c) {
+  a = flipY(a);
+  b = flipY(b);
+  c = flipY(c);
+  const ab = { x: a.x - b.x, y: a.y - b.y };
+  const cb = { x: c.x - b.x, y: c.y - b.y };
+  const dot = ab.x * cb.x + ab.y * cb.y;
+  const cross = ab.x * cb.y - ab.y * cb.x;
+  return Math.atan2(cross, dot);
+}
+
+function getJointAngle(a, b, c) {
+  const ba = { x: a.x - b.x, y: a.y - b.y };
+  const bc = { x: c.x - b.x, y: c.y - b.y };
+  const dot = ba.x * bc.x + ba.y * bc.y;
+  const magBA = Math.hypot(ba.x, ba.y);
+  const magBC = Math.hypot(bc.x, bc.y);
+  if (magBA === 0 || magBC === 0) return 0;
+  const angle = Math.acos(dot / (magBA * magBC));
+  return isNaN(angle) ? 0 : angle;
+}
 
 function URDFRobot() {
   const robotRef = useRef();
@@ -20,19 +45,26 @@ function URDFRobot() {
       return;
     }
 
-    const manager = new THREE.LoadingManager();
-    const loader = new URDFLoader(manager);
+    const loader = new URDFLoader(new THREE.LoadingManager());
     loader.packages = "/model/";
 
     loader.load(
-      "/model/jaxon_jvrc.urdf",
+      "/model/Poppy_Humanoid.urdf",
       (robot) => {
-        robot.rotation.set(-Math.PI / 2, 0, Math.PI);
+        robot.rotation.set(-Math.PI / 2, 0, Math.PI / 4);
         robotRef.current.add(robot);
         robotInstance = robot;
         window.robot = robot;
-      },
 
+        Object.entries(robot.joints).forEach(([name, joint]) => {
+          const cube = new THREE.Mesh(
+            new THREE.BoxGeometry(0.03, 0.03, 0.03),
+            new THREE.MeshBasicMaterial({ color: 0xff0000 })
+          );
+          joint.add(cube);
+          cube.position.set(0, 0, 0);
+        });
+      },
       undefined,
       (err) => console.error("❌ Failed to load URDF", err)
     );
@@ -42,230 +74,120 @@ function URDFRobot() {
 }
 
 export default function PhoneCam() {
-  const peerConnection = useRef(null);
-  const socket = useRef(null);
+  const robotRef = useRef();
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const peerConnection = useRef(null);
+  const socket = useRef(null);
   const [status, setStatus] = useState("Connecting...");
-  const [lastPose, setLastPose] = useState(null);
 
-  useEffect(() => {
-    socket.current = io(NODE_SERVER_URL);
-    window.socket = socket.current;
+  const applyJointRotation = (jointName, value) => {
+    const robot = window.robot;
+    const joint = robot?.joints?.[jointName];
+    if (!joint) return;
+    const { lower, upper } = joint.limit || {};
+    const clampedValue = THREE.MathUtils.clamp(value, lower ?? -Math.PI, upper ?? Math.PI);
+    joint.setJointValue(clampedValue);
+  };
 
-    socket.current.on("connect", () => {
-      setStatus("✅ Connected. Registering phone...");
-      socket.current.emit("register_phone", PHONE_DEVICE_ID);
+  const startCameraWithHolistic = async () => {
+    const holistic = new Holistic({
+      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}`,
     });
 
-    socket.current.on("pose-change", (pose) => {
-      console.log("📥 Received pose from laptop:", pose);
-      applyPoseToRobot(pose);
+    holistic.setOptions({
+      modelComplexity: 1,
+      smoothLandmarks: true,
+      enableSegmentation: false,
+      refineFaceLandmarks: true,
+      minDetectionConfidence: 0.7,
+      minTrackingConfidence: 0.7,
     });
 
-    socket.current.on(
-      "start_webrtc_offer",
-      async ({ requestingLaptopSocketId }) => {
-        setStatus("📡 Laptop requested stream...");
-        await setupPeerConnection(requestingLaptopSocketId);
-      }
-    );
+    holistic.onResults((results) => {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
 
-    socket.current.on("sdp_answer_from_laptop", async (sdpAnswer) => {
-      if (peerConnection.current && !peerConnection.current.remoteDescription) {
-        await peerConnection.current.setRemoteDescription(
-          new RTCSessionDescription(sdpAnswer)
-        );
-        setStatus("✅ WebRTC connected.");
-      }
-    });
+      const p = results.poseLandmarks;
+      if (!p) return;
 
-    socket.current.on("ice_candidate_from_laptop", async (candidate) => {
-      if (peerConnection.current && candidate) {
-        await peerConnection.current.addIceCandidate(candidate);
-      }
-    });
-
-    const applyPoseToRobot = (pose) => {
-      const robot = window.robot;
-      if (!robot) return;
-
-      const set = (j, v) => robot.joints[j]?.setJointValue(v);
-
-      switch (pose) {
-        case "legs-forward":
-          set("LLEG_JOINT2", 0.5);
-          set("RLEG_JOINT2", 0.5);
-          break;
-        case "legs-back":
-          set("LLEG_JOINT2", -0.5);
-          set("RLEG_JOINT2", -0.5);
-          break;
-        case "sit":
-          set("LLEG_JOINT2", -0.7);
-          set("LLEG_JOINT3", 1.2);
-          set("RLEG_JOINT2", -0.7);
-          set("RLEG_JOINT3", 1.2);
-          break;
-        case "stand":
-          for (let i = 0; i <= 5; i++) {
-            set(`LLEG_JOINT${i}`, 0);
-            set(`RLEG_JOINT${i}`, 0);
-          }
-          break;
-        case "head-rotate":
-          set("HEAD_JOINT0", 0.5);
-          break;
-        case "chest-bend":
-          set("CHEST_JOINT1", 0.4);
-          break;
-        case "larm-up":
-          set("LARM_JOINT1", -0.6);
-          break;
-        case "larm-down":
-          set("LARM_JOINT1", 0.6);
-          break;
-        case "rarm-up":
-          set("RARM_JOINT1", -0.6);
-          break;
-        case "rarm-down":
-          set("RARM_JOINT1", 0.6);
-          break;
-        case "reset":
-          Object.keys(robot.joints).forEach((jointName) => {
-            robot.joints[jointName].setJointValue(0);
-          });
-          break;
-        default:
-          break;
-      }
-    };
-
-    const startCameraWithMediaPipe = async () => {
-      const hands = new Hands({
-        locateFile: (file) =>
-          `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+      // 🎯 Visualize joints as circles
+      p.forEach((pt) => {
+        ctx.beginPath();
+        ctx.arc(pt.x * canvas.width, pt.y * canvas.height, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = "#00FF00";
+        ctx.fill();
+        ctx.strokeStyle = "#003300";
+        ctx.stroke();
       });
 
-      hands.setOptions({
-        maxNumHands: 1,
-        modelComplexity: 1,
-        minDetectionConfidence: 0.75,
-        minTrackingConfidence: 0.7,
-      });
-
-      let gestureHistory = [];
-      let lastGestureTime = 0;
-
-      hands.onResults((results) => {
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext("2d");
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-
-        if (
-          results.multiHandLandmarks &&
-          results.multiHandLandmarks.length > 0
-        ) {
-          const hand = results.multiHandLandmarks[0];
-
-          for (let landmark of hand) {
-            ctx.beginPath();
-            ctx.arc(
-              landmark.x * canvas.width,
-              landmark.y * canvas.height,
-              4,
-              0,
-              2 * Math.PI
-            );
-            ctx.fillStyle = "red";
-            ctx.fill();
-          }
-
-          const indexTip = hand[8],
-            indexPip = hand[6],
-            middleTip = hand[12],
-            middlePip = hand[10],
-            ringTip = hand[16],
-            ringPip = hand[14],
-            pinkyTip = hand[20],
-            pinkyPip = hand[18];
-
-          const indexUp = indexTip.y < indexPip.y;
-          const middleDown = middleTip.y > middlePip.y;
-          const ringDown = ringTip.y > ringPip.y;
-          const pinkyDown = pinkyTip.y > pinkyPip.y;
-
-          let newPose = "stand";
-          if (indexUp && middleDown && ringDown && pinkyDown) {
-            newPose = "sit";
-          }
-
-          gestureHistory.push(newPose);
-          if (gestureHistory.length > 7) gestureHistory.shift();
-
-          const poseCounts = gestureHistory.reduce((acc, pose) => {
-            acc[pose] = (acc[pose] || 0) + 1;
-            return acc;
-          }, {});
-
-          const dominantPose =
-            (poseCounts["sit"] || 0) > (poseCounts["stand"] || 0)
-              ? "sit"
-              : "stand";
-
-          const now = Date.now();
-          if (dominantPose !== lastPose && now - lastGestureTime > 1000) {
-            setLastPose(dominantPose);
-            lastGestureTime = now;
-            console.log("✋ Detected hand pose:", dominantPose);
-            applyPoseToRobot(dominantPose);
-          }
+      // 🔗 Draw limb connections
+      const connections = [
+        [11, 13], [13, 15], // Left arm
+        [12, 14], [14, 16], // Right arm
+        [11, 12], // shoulders
+        [23, 24], // hips
+        [11, 23], [12, 24], // torso
+        [23, 25], [25, 27], // left leg
+        [24, 26], [26, 28], // right leg
+      ];
+      ctx.strokeStyle = "#00BFFF";
+      ctx.lineWidth = 2;
+      connections.forEach(([i, j]) => {
+        if (p[i] && p[j]) {
+          ctx.beginPath();
+          ctx.moveTo(p[i].x * canvas.width, p[i].y * canvas.height);
+          ctx.lineTo(p[j].x * canvas.width, p[j].y * canvas.height);
+          ctx.stroke();
         }
       });
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: false,
+      // 🤖 Apply robot joint rotations
+      try {
+        if (p[12] && p[14] && p[16]) {
+          const sx = getSignedJointAngle(p[16], p[12], p[14]);
+          const sy = -sx;
+          const elbow = getJointAngle(p[12], p[14], p[16]);
+          applyJointRotation("r_shoulder_x", sx);
+          applyJointRotation("r_shoulder_y", sy);
+          applyJointRotation("r_elbow_y", Math.PI - elbow);
+        }
+
+        if (p[11] && p[13] && p[15]) {
+          const sx = getSignedJointAngle(p[15], p[11], p[13]);
+          const sy = -sx;
+          const elbow = getJointAngle(p[11], p[13], p[15]);
+          applyJointRotation("l_shoulder_x", -sx);
+          applyJointRotation("l_shoulder_y", sy);
+          applyJointRotation("l_elbow_y", Math.PI - elbow);
+        }
+      } catch (e) {
+        console.warn("Pose angle error", e);
+      }
+    });
+
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    videoRef.current.srcObject = stream;
+
+    videoRef.current.onloadedmetadata = () => {
+      const cam = new Camera(videoRef.current, {
+        onFrame: async () => await holistic.send({ image: videoRef.current }),
+        width: 320,
+        height: 240,
       });
-
-      videoRef.current.srcObject = stream;
-
-      videoRef.current.onloadedmetadata = () => {
-        const camera = new Camera(videoRef.current, {
-          onFrame: async () => {
-            if (videoRef.current?.videoWidth > 0) {
-              await hands.send({ image: videoRef.current });
-            }
-          },
-          width: 320,
-          height: 240,
-        });
-
-        camera.start();
-      };
+      cam.start();
     };
-
-    startCameraWithMediaPipe();
-
-    return () => {
-      if (peerConnection.current) peerConnection.current.close();
-      socket.current.disconnect();
-    };
-  }, [lastPose]);
+  };
 
   const setupPeerConnection = async (requestingLaptopSocketId) => {
     if (peerConnection.current) peerConnection.current.close();
-
-    const pc = new RTCPeerConnection({
-      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-    });
+    const pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
     peerConnection.current = pc;
 
     const stream = videoRef.current?.srcObject;
-    if (stream) {
-      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-    }
+    if (stream) stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
     pc.onicecandidate = (event) => {
       if (event.candidate) {
@@ -279,7 +201,6 @@ export default function PhoneCam() {
 
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
-
     socket.current.emit("sdp_offer_from_phone", {
       sdpOffer: offer,
       phoneDeviceId: PHONE_DEVICE_ID,
@@ -287,48 +208,82 @@ export default function PhoneCam() {
     });
   };
 
-  return (
-    <div style={{ paddingTop: "80px", background: "#fff", height: "100vh" }}>
-      <div style={{ textAlign: "center", padding: "10px" }}>
-        <h2>🤖 Robot + Hand Control</h2>
-        <p>{status}</p>
-        <p>
-          Device ID: <strong>{PHONE_DEVICE_ID}</strong>
-        </p>
-      </div>
+  useEffect(() => {
+    socket.current = io(NODE_SERVER_URL);
 
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          height: "calc(100vh - 150px)",
-          padding: "10px",
-          gap: "20px",
-        }}
-      >
-        {/* 📷 Webcam + Canvas Overlay */}
-        <div
-          style={{
-            flex: "0 0 30%",
-            position: "relative",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            borderRight: "1px solid #ddd",
-            paddingRight: "10px",
-            width: "320px",
-            height: "240px",
-          }}
-        >
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            playsInline
-            style={{
-              display: "none",
-            }}
-          />
+    socket.current.on("connect", () => {
+      setStatus("✅ Connected. Registering phone...");
+      socket.current.emit("register_phone", PHONE_DEVICE_ID);
+    });
+
+    socket.current.on("start_webrtc_offer", async ({ requestingLaptopSocketId }) => {
+      setStatus("📡 Laptop requested stream...");
+      await setupPeerConnection(requestingLaptopSocketId);
+    });
+
+    socket.current.on("sdp_answer_from_laptop", async (sdpAnswer) => {
+      if (peerConnection.current && !peerConnection.current.remoteDescription) {
+        await peerConnection.current.setRemoteDescription(new RTCSessionDescription(sdpAnswer));
+        setStatus("✅ WebRTC connected.");
+      }
+    });
+
+    socket.current.on("ice_candidate_from_laptop", async (candidate) => {
+      if (peerConnection.current && candidate) {
+        await peerConnection.current.addIceCandidate(candidate);
+      }
+    });
+
+    startCameraWithHolistic();
+
+    return () => {
+      if (peerConnection.current) peerConnection.current.close();
+      socket.current.disconnect();
+    };
+  }, []);
+
+    // const setupPeerConnection = async (requestingLaptopSocketId) => {
+  //   if (peerConnection.current) peerConnection.current.close();
+  //   const pc = new RTCPeerConnection({
+  //     iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+  //   });
+  //   peerConnection.current = pc;
+
+  //   const stream = videoRef.current?.srcObject;
+  //   if (stream) {
+  //     stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+  //   }
+
+  //   pc.onicecandidate = (event) => {
+  //     if (event.candidate) {
+  //       socket.current.emit("ice_candidate_from_phone", {
+  //         candidate: event.candidate,
+  //         phoneDeviceId: PHONE_DEVICE_ID,
+  //         requestingLaptopSocketId,
+  //       });
+  //     }
+  //   };
+
+  //   const offer = await pc.createOffer();
+  //   await pc.setLocalDescription(offer);
+
+  //   socket.current.emit("sdp_offer_from_phone", {
+  //     sdpOffer: offer,
+  //     phoneDeviceId: PHONE_DEVICE_ID,
+  //     requestingLaptopSocketId,
+  //   });
+  // };
+
+  return (
+    <div style={{ paddingTop: "80px", background: "#FFFFFF", height: "100vh" }}>
+      <div style={{ textAlign: "center", padding: "10px" }}>
+        <h2>🤖 Full-Body Robot Tracker</h2>
+        <p>{status}</p>
+        <p>Device ID: <strong>{PHONE_DEVICE_ID}</strong></p>
+      </div>
+      <div style={{ display: "flex", height: "calc(100vh - 150px)", padding: "10px", gap: "20px" }}>
+        <div style={{ width: "320px", height: "240px", borderRight: "1px solid #ddd" }}>
+          <video ref={videoRef} autoPlay muted playsInline style={{ display: "none" }} />
           <canvas
             ref={canvasRef}
             width={320}
@@ -341,13 +296,8 @@ export default function PhoneCam() {
             }}
           />
         </div>
-
-        {/* 🤖 Robot Canvas */}
-        <div style={{ flex: "1", height: "100%" }}>
-          <Canvas
-            camera={{ position: [0, 1.5, 3], fov: 50 }}
-            style={{ width: "100%", height: "100%" }}
-          >
+        <div style={{ flex: 1, height: "100%" }}>
+          <Canvas camera={{ position: [0, 1.5, 3], fov: 50 }} style={{ width: "100%", height: "100%" }}>
             <ambientLight intensity={1.2} />
             <directionalLight position={[5, 5, 5]} intensity={1.5} />
             <OrbitControls />

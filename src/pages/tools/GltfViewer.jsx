@@ -15,7 +15,7 @@ function URDFRobot() {
     const loader = new URDFLoader(manager);
     loader.packages = "/model/";
 
-    loader.load("/model/jaxon_jvrc.urdf", (robot) => {
+    loader.load("/model/Poppy_Humanoid.urdf", (robot) => {
       robotRef.current.add(robot);
       window.robot = robot;
 
@@ -27,11 +27,6 @@ function URDFRobot() {
           if (!child.geometry.attributes.normal) {
             child.geometry.computeVertexNormals();
           }
-          // child.material = new THREE.MeshStandardMaterial({
-          //   color: 0x6699ff,
-          //   metalness: 0.3,
-          //   roughness: 0.7,
-          // });
         }
       });
 
@@ -74,10 +69,10 @@ function URDFRobot() {
 
 export default function GltfViewer() {
   return (
-    <div style={{ height: "100vh", background: "#fff" }}>
+    <div style={{ height: "100vh", background: "#0f1729" }}>
       <Canvas
         camera={{ position: [0, 2, 4], fov: 50 }}
-        style={{ background: "white" }}
+        style={{ background: "#0f1729" }}
         gl={{ outputColorSpace: THREE.SRGBColorSpace }}
       >
         <ambientLight intensity={0.7} />

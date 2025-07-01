@@ -13,6 +13,7 @@
     "@mediapipe/camera_utils": "^0.3.1675466862",
     "@mediapipe/drawing_utils": "^0.3.1675466124",
     "@mediapipe/hands": "^0.4.1675469240",
+    "@mediapipe/holistic": "^0.5.1675471629",
     "@react-three/drei": "^8.20.2",
     "@react-three/fiber": "^8.18.0",
     "@tensorflow-models/hand-pose-detection": "^2.0.1",
@@ -31,7 +32,8 @@
     "react-scroll": "^1.9.3",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
-    "three": "^0.152.0",
+    "three": "^0.152.2",
+    "three-stdlib": "^2.36.0",
     "urdf-loader": "^0.12.6"
   },
   "devDependencies": {

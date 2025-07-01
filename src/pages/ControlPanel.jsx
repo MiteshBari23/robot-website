@@ -207,7 +207,8 @@ const ControlPanel = () => {
 const styles = {
     container: {
         fontFamily: "'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
-        padding: "30px",
+        marginTop: "80px",
+        padding: "40px",
         maxWidth: "600px",
         margin: "20px auto",
         backgroundColor: "#ffffff",

@@ -62,6 +62,8 @@ export default function OffcanvasExample({ user, setUser }) {
               <NavDropdown.Item as={Link} to="/contact">Contact</NavDropdown.Item>
               <NavDropdown.Divider />
               <NavDropdown.Item as={Link} to="/about">About Us</NavDropdown.Item>
+              <NavDropdown.Divider />
+              <NavDropdown.Item as={Link} to="/robot-uploader">Upload MODEL</NavDropdown.Item>
             </NavDropdown>
 
             {user && (

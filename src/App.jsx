@@ -10,6 +10,7 @@ import ThankYou from "./pages/ThankYou";
 import ControlPanel from "./pages/ControlPanel";
 import PhoneCam from "./pages/PhoneCam";
 import GltfViewer from "./pages/tools/GltfViewer";
+import RobotUploader from "./pages/tools/RobotUploader";
 
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { useState } from "react";
@@ -30,6 +31,7 @@ function App() {
         <Route path="/gltf-viewer" element={<GltfViewer />} />
         <Route path="/phonecam" element={<PhoneCam />} />
         <Route path="/controller" element={<ControlPanel />} />
+        <Route path="/robot-uploader" element={<RobotUploader />} />
       </Routes>
     </Router>
   );
